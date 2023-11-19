@@ -105,7 +105,7 @@ Datum has_board(PG_FUNCTION_ARGS) {
     int len = 100;//87
     snprintf(input_fen,len,"%s/%s/%s/%s/%s/%s/%s/%s", fen->board[0],fen->board[1],fen->board[2],fen->board[3],fen->board[4],fen->board[5]
             ,fen->board[6],fen->board[7]);
-    int input_int = PG_GETARG_INT32(1);
+    int input_int = PG_GETARG_INT32(2);
     PG_RETURN_BOOL(internal_has_board(input_san,input_fen,input_int));
 }
 
@@ -317,7 +317,7 @@ char* internal_get_board(const char* PGN, int N){
     sprintf(moves, " %d %d", board[66], (int) floor(board[65] / 2));//half moves since the last capture or pawn advanced and number of full moves
     strcat(parseSolution, turn);//Writes which color has to play
     sprintf(bits,"%x",board[64]);
-    ereport(INFO, errmsg("%x", board[64]));
+    //ereport(INFO, errmsg("%x", board[64]));
     if('f' == bits[3]){
         castling_count += 1;
         strcat(castling, "K");
@@ -395,20 +395,30 @@ bool internal_has_opening(const char* PGNone, const char* PGNtwo){
  * at a time instead of recreating the board for the PGN notation for every half moves
  * until we arrive at N*/
 bool internal_has_board(const char* PGN, const char* FEN, int N){
-    char *token = (char*)malloc(72 * sizeof(char));
+    SCL_Record record;//Hold record of the game
+    SCL_Board board;//Holds state of the board
+    char* firstMoves;
+    uint16_t halfMoves;
+    char* tempFirstMovesBoard;
+
     bool solution = true;
     int countHalfMoves = 0;//start the half moves counter at one
     int found = 1;//found the game state is false by default
+
     while((countHalfMoves<N+1 && found != 0)){//stop when we have verified all the half moves or if we find the board state
-        char* tempFirstMovesBoard = internal_get_board(PGN, countHalfMoves);//getting the FEN of the board state for every half move played
-        token = strtok(tempFirstMovesBoard, " ");
-        found = strcmp(FEN, token);//compare the board state every time a move is played
+        firstMoves = internal_get_first_moves(PGN,countHalfMoves);
+        SCL_boardInit(board);
+        SCL_recordFromPGN(record, firstMoves);
+        halfMoves = (uint16_t)countHalfMoves;
+        SCL_recordApply(record, board, halfMoves);//Applies the record of moves one after another on a board
+        tempFirstMovesBoard = get_only_board(board);//getting the FEN of the board state for every half move played
+        found = strcmp(tempFirstMovesBoard, FEN);//compare the board state every time a move is played
         countHalfMoves += 1;
         free(tempFirstMovesBoard);
+        free(firstMoves);
     }
     if((countHalfMoves == N+1 && found != 0) || N<0){//verify if we have found the board state or if we have finished iterating without finding anything
         solution = false;
     }
-    free(token);
     return solution;
 }
