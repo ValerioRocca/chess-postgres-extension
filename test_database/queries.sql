@@ -1,26 +1,26 @@
 
 -- Query 1
--- Return the games where the board at half-move 3 is the same of half-move 6
+-- Return the board at half-move 3 of the games played in Palma de Mallorca
 
-SELECT id
-FROM games_100 g1
-JOIN games_100 g2 ON g1.id = g2.id
-WHERE getBoard(g1.san, 3) = getBoard(g2.san, 6);
+HAVING game_site == 'Palma de Mallorca'
+SELECT *
+FROM games_100
+WHERE getBoard(san, 3)
 
-SELECT id
-FROM games_20 g1
-JOIN games_20 g2 ON g1.id = g2.id
-WHERE getBoard(g1.san, 3) = getBoard(g2.san, 6)
+HAVING game_site == 'Palma de Mallorca'
+SELECT *
+FROM games_20
+WHERE getBoard(san, 3)
 
-SELECT id
-FROM games_5 g1
-JOIN games_5 g2 ON g1.id = g2.id
-WHERE getBoard(g1.san, 3) = getBoard(g2.san, 6);
+HAVING game_site == 'Palma de Mallorca'
+SELECT *
+FROM games_5
+WHERE getBoard(san, 3)
 
-SELECT id
-FROM games_1 g1
-JOIN games_1 g2 ON g1.id = g2.id
-WHERE getBoard(g1.san, 3) = getBoard(g2.san, 6);
+HAVING game_site == 'Palma de Mallorca'
+SELECT *
+FROM games_1
+WHERE getBoard(san, 3)
 
 -- Query 2
 -- Return the games played in Leningrad and remove its opening move
