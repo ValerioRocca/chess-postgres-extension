@@ -4,6 +4,7 @@
 #include "fmgr.h"
 #include "smallchesslib.h"
 #include <string.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -69,7 +70,7 @@ Datum fen_output(PG_FUNCTION_ARGS) {
     char *result = palloc0(sizeof(100));
     int len = 100;//87
     snprintf(result,len,"%s/%s/%s/%s/%s/%s/%s/%s %s %s %s %s %s", fen->board[0],fen->board[1],fen->board[2],fen->board[3],fen->board[4],fen->board[5]
-             ,fen->board[6],fen->board[7],fen->turn,fen->rock,fen->en_passant,fen->half_move,fen->full_move);
+            ,fen->board[6],fen->board[7],fen->turn,fen->rock,fen->en_passant,fen->half_move,fen->full_move);
     PG_RETURN_CSTRING(result);
 }
 
@@ -102,8 +103,8 @@ Datum has_board(PG_FUNCTION_ARGS) {
     Fen *fen = PG_GETARG_FEN_P(1); // Get input text as a text pointer
     char *input_fen = palloc0(sizeof(100));
     int len = 100;//87
-    snprintf(input_fen,len,"%s/%s/%s/%s/%s/%s/%s/%s %s %s %s %s %s", fen->board[0],fen->board[1],fen->board[2],fen->board[3],fen->board[4],fen->board[5]
-            ,fen->board[6],fen->board[7],fen->turn,fen->rock,fen->en_passant,fen->half_move,fen->full_move);
+    snprintf(input_fen,len,"%s/%s/%s/%s/%s/%s/%s/%s", fen->board[0],fen->board[1],fen->board[2],fen->board[3],fen->board[4],fen->board[5]
+            ,fen->board[6],fen->board[7]);
     int input_int = PG_GETARG_INT32(1);
     PG_RETURN_BOOL(internal_has_board(input_san,input_fen,input_int));
 }
@@ -242,20 +243,118 @@ char* internal_get_first_moves(const char* PGN, int N){
     return firstMovesSolution;
 }
 
+char* get_only_board(SCL_Board board){
+    char* solution;
+    solution = (char*)malloc(85 * sizeof(char));
+    strcpy(solution, "");
+    int t = SCL_boardToFEN(board, solution);
+    strcpy(solution, board);
+    char* parseSolution = (char*)malloc(85 * sizeof(char));
+    strcpy(parseSolution, "");
+    int count = 0;
+    char strcount[2];
+    char temp[2];
+    for(int i=0; i<8; i++){
+        count = 0;
+        for(int k = i*8; k<(i+1)*8; k++){
+            sprintf(temp, "%c", solution[k]);
+            if (strcmp(temp, ".")==0){
+                count++;
+            }
+            else{
+                if (count>0){
+                    sprintf(strcount, "%d", count);
+                    strcat(parseSolution, strcount);
+                    count = 0;
+                }
+                strcat(parseSolution, temp);
+
+            }
+        }
+        if (count>0){
+            sprintf(strcount, "%d", count);
+            strcat(parseSolution, strcount);
+
+        }
+        if(i<7){
+            strcat(parseSolution, "/");
+
+        }
+
+    }
+    free(solution);
+    return parseSolution;
+}
+
 char* internal_get_board(const char* PGN, int N){
-    char* solution = (char*)malloc(70 * sizeof(char));//allocation of size 70 char(FEN notation does not exceed 70 character)
-    strcpy(solution,"");//Copy empty stream into the char* to remove unwanted artifacts
+    char turn[3], moves[5], bits[10], castling[6], en_passant[3];
+    char cols[8][2] = {"a","b","c","d","e","f","g","h"};
+    strcpy(turn,"");//Copy empty stream into the char to remove unwanted artifacts
+    strcpy(moves,"");
+    strcpy(bits,"");
+    strcpy(castling," ");
+    strcpy(en_passant,"");
+
+    int castling_count = 0;
+    int square_num = 0;
+
     SCL_Record record;//Hold record of the game
     char* firstMoves = internal_get_first_moves(PGN,N);
-    SCL_recordFromPGN(record,firstMoves);
+    SCL_recordFromPGN(record, firstMoves);
     SCL_Board board;//Holds state of the board
     SCL_boardInit(board);
-    uint16_t halfMoves = (uint16_t)N;
+    uint16_t halfMoves = (uint16_t) N;
     SCL_recordApply(record, board, halfMoves);//Applies the record of moves one after another on a board
+    char *parseSolution = get_only_board(board);
+    //ereport(INFO, errmsg("%x", board[64]));
+    uint8_t white_turn =  SCL_boardWhitesTurn(board);
+    if (white_turn == 0) {//Holds playing color (0 = white)
+        sprintf(turn, " w");
+    } else {
+        sprintf(turn, " b");
+    }
 
-    strcpy(solution, firstMoves);
+    sprintf(moves, " %d %d", board[66], (int) floor(board[65] / 2));//half moves since the last capture or pawn advanced and number of full moves
+    strcat(parseSolution, turn);//Writes which color has to play
+    sprintf(bits,"%x",board[64]);
+    ereport(INFO, errmsg("%x", board[64]));
+    if('f' == bits[3]){
+        castling_count += 1;
+        strcat(castling, "K");
+    }
+    if('f' == bits[2]){
+        castling_count += 1;
+        strcat(castling, "Q");
+    }
+    if('f' == bits[1]){
+        castling_count += 1;
+        strcat(castling, "k");
+    }
+    if('f' == bits[0]){
+        castling_count += 1;
+        strcat(castling, "q");
+    }
+    if(castling_count == 0){
+        strcat(castling, "-");
+    }
+    if('f' != bits[7]){
+        square_num = bits[7] - '0';
+        if(white_turn == 0) {
+            sprintf(en_passant, " %s3",cols[square_num]);
+        }else{
+            sprintf(en_passant, " %s6",cols[square_num]);
+        }
+    }else{
+        strcpy(en_passant," -");
+    }
+    if(castling_count == 0){
+        strcat(castling, "-");
+    }
+    strcat(parseSolution, castling);//Writes the castlings
+    strcat(parseSolution, en_passant);//Writes the en passant target square
+    strcat(parseSolution, moves);//Writes half moves since the last capture or pawn advanced and number of full moves
     free(firstMoves);
-    return solution;
+    return parseSolution;
 }
 
 bool internal_has_opening(const char* PGNone, const char* PGNtwo){
@@ -296,17 +395,20 @@ bool internal_has_opening(const char* PGNone, const char* PGNtwo){
  * at a time instead of recreating the board for the PGN notation for every half moves
  * until we arrive at N*/
 bool internal_has_board(const char* PGN, const char* FEN, int N){
+    char *token = (char*)malloc(72 * sizeof(char));
     bool solution = true;
     int countHalfMoves = 0;//start the half moves counter at one
     int found = 1;//found the game state is false by default
     while((countHalfMoves<N+1 && found != 0)){//stop when we have verified all the half moves or if we find the board state
         char* tempFirstMovesBoard = internal_get_board(PGN, countHalfMoves);//getting the FEN of the board state for every half move played
-        found = strcmp(FEN, tempFirstMovesBoard);//compare the board state every time a move is played
+        token = strtok(tempFirstMovesBoard, " ");
+        found = strcmp(FEN, token);//compare the board state every time a move is played
         countHalfMoves += 1;
         free(tempFirstMovesBoard);
     }
     if((countHalfMoves == N+1 && found != 0) || N<0){//verify if we have found the board state or if we have finished iterating without finding anything
         solution = false;
     }
+    free(token);
     return solution;
 }
