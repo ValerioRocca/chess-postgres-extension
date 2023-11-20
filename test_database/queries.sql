@@ -2,44 +2,40 @@
 -- Query 1
 -- Return the board at half-move 3 of the games played in Palma de Mallorca
 
-HAVING game_site == 'Palma de Mallorca'
 SELECT *
 FROM games_100
-WHERE get_board(san, 3)
+WHERE get_board(san, 3) AND game_site == 'Palma de Mallorca'
 
-HAVING game_site == 'Palma de Mallorca'
 SELECT *
 FROM games_20
-WHERE get_board(san, 3)
+WHERE get_board(san, 3) AND game_site == 'Palma de Mallorca'
 
-HAVING game_site == 'Palma de Mallorca'
 SELECT *
 FROM games_5
-WHERE get_board(san, 3)
+WHERE get_board(san, 3) AND game_site == 'Palma de Mallorca'
 
-HAVING game_site == 'Palma de Mallorca'
 SELECT *
 FROM games_1
-WHERE get_board(san, 3)
+WHERE get_board(san, 3) AND game_site == 'Palma de Mallorca'
 
 -- Query 2
 -- Return the games played in Leningrad and remove its opening move
 
-HAVING game_site == 'Leningrad'
 SELECT get_first_moves(san, 1)
-FROM games_100;
+FROM games_100
+WHERE game_site == 'Leningrad';
 
-HAVING game_site == 'Leningrad'
 SELECT get_first_moves(san, 1)
-FROM games_20;
+FROM games_20
+WHERE game_site == 'Leningrad';
 
-HAVING game_site == 'Leningrad'
 SELECT get_first_moves(san, 1)
-FROM games_5;
+FROM games_5
+WHERE game_site == 'Leningrad';
 
-HAVING game_site == 'Leningrad'
 SELECT get_first_moves(san, 1)
-FROM games_1;
+FROM games_1
+WHERE game_site == 'Leningrad';
 
 -- Query 3
 -- Return the games which 6 first moves are the same of the Game of the Century
