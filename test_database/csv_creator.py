@@ -40,7 +40,7 @@ def extract_game_info(pgn_file_path):
             # Join the SAN moves into a single string
             san_moves_str = ' '.join(san_moves)
 
-            game_info_list.append({'san': san_moves_str, 'player': player_name, 'site': site})
+            game_info_list.append({'notation': san_moves_str, 'player': player_name, 'site': site})
 
             game = chess.pgn.read_game(pgn_file)
 
@@ -51,7 +51,7 @@ def append_game_info_to_csv(game_info, output_csv_file):
     file_exists = os.path.isfile(output_csv_file)
 
     with open(output_csv_file, 'a', newline='') as csv_file:
-        fieldnames = ['san', 'player', 'site']
+        fieldnames = ['notation', 'player', 'site']
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 
         if not file_exists:
