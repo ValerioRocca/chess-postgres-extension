@@ -38,7 +38,7 @@ FROM games_1
 WHERE game_site == 'Leningrad';
 
 -- Query 3
--- Return the games which 6 first moves are the same of the Game of the Century
+-- Return the games which 6 first half-moves are the same of the Game of the Century
 
 SELECT *, pg_read_file('C:\Users\valer\Desktop\DBSA\project\chess-postgres-extension\test_database\game_of_the_century.txt') AS gotc;
 FROM games_100
