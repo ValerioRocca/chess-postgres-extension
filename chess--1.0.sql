@@ -49,6 +49,26 @@ CREATE OR REPLACE FUNCTION san_ne(san, san)
     AS 'MODULE_PATHNAME','san_ne'
     LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
+CREATE OR REPLACE FUNCTION san_get(san, san)
+    RETURNS boolean
+    AS 'MODULE_PATHNAME','san_get'
+    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION san_gt(san, san)
+    RETURNS boolean
+    AS 'MODULE_PATHNAME','san_gt'
+    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION san_lt(san, san)
+    RETURNS boolean
+    AS 'MODULE_PATHNAME','san_lt'
+    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION san_let(san, san)
+    RETURNS boolean
+    AS 'MODULE_PATHNAME','san_let'
+    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
 --operator for two san
 CREATE OPERATOR = (
     LEFTARG = san, RIGHTARG = san,
@@ -56,12 +76,36 @@ CREATE OPERATOR = (
     COMMUTATOR = =, NEGATOR = <>
     );
 
---operator for two san
 CREATE OPERATOR <> (
     LEFTARG = san, RIGHTARG = san,
     PROCEDURE = san_ne,
     COMMUTATOR = <>, NEGATOR = =
     );
+
+CREATE OPERATOR <= (
+    LEFTARG = san, RIGHTARG = san,
+    PROCEDURE = san_let,
+    COMMUTATOR = <=, NEGATOR = >
+    );
+
+CREATE OPERATOR >= (
+    LEFTARG = san, RIGHTARG = san,
+    PROCEDURE = san_get,
+    COMMUTATOR = >=, NEGATOR = <
+    );    
+
+
+CREATE OPERATOR < (
+    LEFTARG = san, RIGHTARG = san,
+    PROCEDURE = san_lt,
+    COMMUTATOR = <, NEGATOR = >=
+    );
+
+CREATE OPERATOR > (
+    LEFTARG = san, RIGHTARG = san,
+    PROCEDURE = san_gt,
+    COMMUTATOR = >, NEGATOR = <=
+    );    
 /*
  *FUNCTIONS
  */
