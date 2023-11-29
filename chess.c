@@ -56,22 +56,52 @@ PG_FUNCTION_INFO_V1(san_ne);
 Datum san_ne(PG_FUNCTION_ARGS) {
     PG_RETURN_BOOL(!text_eq(PG_GETARG_TEXT_PP(0),PG_GETARG_TEXT_PP(1)));
 }
-PG_FUNCTION_INFO_V1(san_get);
-Datum san_get(PG_FUNCTION_ARGS) {
-    PG_RETURN_BOOL(text_eq(PG_GETARG_TEXT_PP(0),PG_GETARG_TEXT_PP(1))>=0);
+
+PG_FUNCTION_INFO_V1(san_lt_2);
+Datum san_lt_2(PG_FUNCTION_ARGS) {
+  if (strcmp(PG_GETARG_TEXT_PP(0), PG_GETARG_TEXT_PP(1)) < 0) {
+    PG_RETURN_BOOL(1); // true
+  } else {
+    PG_RETURN_BOOL(0); // false
+  }
 }
-PG_FUNCTION_INFO_V1(san_gt);
-Datum san_gt(PG_FUNCTION_ARGS) {
-    PG_RETURN_BOOL(text_eq(PG_GETARG_TEXT_PP(0),PG_GETARG_TEXT_PP(1))>0);
+
+PG_FUNCTION_INFO_V1(san_le_2);
+Datum san_le_2(PG_FUNCTION_ARGS) {
+  if (strcmp(PG_GETARG_TEXT_PP(0), PG_GETARG_TEXT_PP(1)) <= 0) {
+    PG_RETURN_BOOL(1); // true
+  } else {
+    PG_RETURN_BOOL(0); // false
+  }
 }
-PG_FUNCTION_INFO_V1(san_let);
-Datum san_let(PG_FUNCTION_ARGS) {
-    PG_RETURN_BOOL(text_eq(PG_GETARG_TEXT_PP(0),PG_GETARG_TEXT_PP(1))<=0);
+
+PG_FUNCTION_INFO_V1(san_gt_2); // >
+Datum san_gt_2(PG_FUNCTION_ARGS) {
+  if (strcmp(PG_GETARG_TEXT_PP(0), PG_GETARG_TEXT_PP(1)) > 0) {
+    PG_RETURN_BOOL(1); // true
+  } else {
+    PG_RETURN_BOOL(0); // false
+  }
 }
-PG_FUNCTION_INFO_V1(san_lt);
-Datum san_lt(PG_FUNCTION_ARGS) {
-    PG_RETURN_BOOL(text_eq(PG_GETARG_TEXT_PP(0),PG_GETARG_TEXT_PP(1))<0);
+
+PG_FUNCTION_INFO_V1(san_ge_2);
+Datum san_ge_2(PG_FUNCTION_ARGS) {
+   if (strcmp(PG_GETARG_TEXT_PP(0), PG_GETARG_TEXT_PP(1)) >= 0) {
+    PG_RETURN_BOOL(1); // true
+  } else {
+    PG_RETURN_BOOL(0); // false
+  }
 }
+
+PG_FUNCTION_INFO_V1(san_cmp_2);
+Datum san_cmp_2(PG_FUNCTION_ARGS) {
+  PG_RETURN_INT64(strcmp(PG_GETARG_TEXT_PP(0), PG_GETARG_TEXT_PP(1)));
+}
+
+
+
+
+
 
 PG_FUNCTION_INFO_V1(fen_input);
 Datum fen_input(PG_FUNCTION_ARGS) {

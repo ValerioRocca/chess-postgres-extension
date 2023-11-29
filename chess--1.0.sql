@@ -49,63 +49,34 @@ CREATE OR REPLACE FUNCTION san_ne(san, san)
     AS 'MODULE_PATHNAME','san_ne'
     LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE OR REPLACE FUNCTION san_get(san, san)
-    RETURNS boolean
-    AS 'MODULE_PATHNAME','san_get'
-    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+CREATE OR REPLACE FUNCTION san_lt_2(san, san)
+RETURNS BOOLEAN
+AS 'MODULE_PATHNAME','san_lt_2'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE OR REPLACE FUNCTION san_gt(san, san)
-    RETURNS boolean
-    AS 'MODULE_PATHNAME','san_gt'
-    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+CREATE OR REPLACE FUNCTION san_le_2(san, san)
+RETURNS BOOLEAN
+AS 'MODULE_PATHNAME','san_le_2'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE OR REPLACE FUNCTION san_lt(san, san)
-    RETURNS boolean
-    AS 'MODULE_PATHNAME','san_lt'
-    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+CREATE OR REPLACE FUNCTION san_gt_2(san, san)
+RETURNS BOOLEAN
+AS 'MODULE_PATHNAME','san_gt_2'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE OR REPLACE FUNCTION san_let(san, san)
-    RETURNS boolean
-    AS 'MODULE_PATHNAME','san_let'
-    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+CREATE OR REPLACE FUNCTION san_ge_2(san, san)
+RETURNS BOOLEAN
+AS 'MODULE_PATHNAME','san_ge_2'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
---operator for two san
-CREATE OPERATOR = (
-    LEFTARG = san, RIGHTARG = san,
-    PROCEDURE = san_eq,
-    COMMUTATOR = =, NEGATOR = <>
-    );
-
-CREATE OPERATOR <> (
-    LEFTARG = san, RIGHTARG = san,
-    PROCEDURE = san_ne,
-    COMMUTATOR = <>, NEGATOR = =
-    );
-
-CREATE OPERATOR <= (
-    LEFTARG = san, RIGHTARG = san,
-    PROCEDURE = san_let,
-    COMMUTATOR = <=, NEGATOR = >
-    );
-
-CREATE OPERATOR >= (
-    LEFTARG = san, RIGHTARG = san,
-    PROCEDURE = san_get,
-    COMMUTATOR = >=, NEGATOR = <
-    );    
+CREATE OR REPLACE FUNCTION san_cmp_2(san, san)
+RETURNS INTEGER
+AS 'MODULE_PATHNAME','san_cmp_2'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 
-CREATE OPERATOR < (
-    LEFTARG = san, RIGHTARG = san,
-    PROCEDURE = san_lt,
-    COMMUTATOR = <, NEGATOR = >=
-    );
 
-CREATE OPERATOR > (
-    LEFTARG = san, RIGHTARG = san,
-    PROCEDURE = san_gt,
-    COMMUTATOR = >, NEGATOR = <=
-    );    
+
 /*
  *FUNCTIONS
  */
@@ -128,3 +99,71 @@ CREATE OR REPLACE FUNCTION has_board(san,fen,int)
     RETURNS boolean
     AS 'MODULE_PATHNAME','has_board'
     LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+
+
+CREATE OPERATOR = (
+	LEFTARG = san,
+	RIGHTARG = san,
+	PROCEDURE = san_eq,
+	COMMUTATOR = =,
+	NEGATOR = <>
+);
+
+
+COMMENT ON OPERATOR =(san, san) IS 'equals?';
+
+CREATE OPERATOR <> (
+	LEFTARG = san,
+	RIGHTARG = san,
+	PROCEDURE = san_ne,
+	COMMUTATOR = <>,
+	NEGATOR = =
+);
+COMMENT ON OPERATOR <>(san, san) IS 'not equals?';
+
+CREATE OPERATOR < (
+	LEFTARG = san,
+	RIGHTARG = san,
+	PROCEDURE = san_lt_2,
+	COMMUTATOR = > ,
+	NEGATOR = >= 
+);
+COMMENT ON OPERATOR <(san, san) IS 'less-than';
+
+CREATE OPERATOR <= (
+	LEFTARG = san,
+	RIGHTARG = san,
+	PROCEDURE = san_le_2,
+	COMMUTATOR = >= , 
+	NEGATOR = > 
+);
+COMMENT ON OPERATOR <=(san, san) IS 'less-than-or-equal';
+
+CREATE OPERATOR > (
+	LEFTARG = san,
+	RIGHTARG = san,
+	PROCEDURE = san_gt_2,
+	COMMUTATOR = < ,
+	NEGATOR = <= 
+);
+COMMENT ON OPERATOR >(san, san) IS 'greater-than';
+
+CREATE OPERATOR >= (
+	LEFTARG = san,
+	RIGHTARG = san,
+	PROCEDURE = san_ge_2,
+	COMMUTATOR = <= , 
+	NEGATOR = < 
+);
+COMMENT ON OPERATOR >=(san, san) IS 'greater-than-or-equal';
+
+CREATE OPERATOR CLASS btree_san
+DEFAULT FOR TYPE san USING btree
+AS
+        OPERATOR        1       <  ,
+        OPERATOR        2       <= ,
+        OPERATOR        3       =  ,
+        OPERATOR        4       >= ,
+        OPERATOR        5       >  ,
+        FUNCTION        1       san_cmp_2(san, san);
