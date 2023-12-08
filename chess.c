@@ -39,7 +39,7 @@ bool text_eq(San *san_one, San *san_two);
 Fen *fen_constructor(char *fen_char);
 San *san_constructor(char *san_char);
 char* internal_get_first_moves(const char* PGN, int N);
-char* internal_get_board(const char* PGN, int N);
+char* internal_get_board(const char* PGN, int N,int san_size);
 bool internal_has_opening(const char* PGNone, const char* PGNtwo);
 bool internal_has_board(const char* PGN, const char* FEN, int N);
 char ** str_matrix_allocation(int rows, int columns);
@@ -124,7 +124,6 @@ Datum san_cmp_2(PG_FUNCTION_ARGS) {
 
 
 
-
 PG_FUNCTION_INFO_V1(fen_input);
 Datum fen_input(PG_FUNCTION_ARGS) {
     char *input_str = PG_GETARG_CSTRING(0);
@@ -143,25 +142,23 @@ Datum fen_output(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(getFirstMoves);
 Datum getFirstMoves(PG_FUNCTION_ARGS) {
-    text *input_text = PG_GETARG_TEXT_P(0); // Get input text as a text pointer
-    char *input_str = text_to_cstring(input_text); // Convert text to C string
+    San *my_san = PG_GETARG_SAN_P(0); // Get input san pointer
     int input_int = PG_GETARG_INT32(1);
-    PG_RETURN_CSTRING(internal_get_first_moves(input_str,input_int));
+    PG_RETURN_CSTRING(internal_get_first_moves(my_san->san, input_int));
 }
 
 PG_FUNCTION_INFO_V1(getBoard);
 Datum getBoard(PG_FUNCTION_ARGS) {
-    text *input_text = PG_GETARG_TEXT_P(0); // Get input text as a text pointer
-    char *input_str = text_to_cstring(input_text); // Convert text to C string
+    San *my_san = PG_GETARG_SAN_P(0); // Get input san pointer
     int input_int = PG_GETARG_INT32(1);
-    PG_RETURN_CSTRING(internal_get_board(input_str,input_int));
+    PG_RETURN_CSTRING(internal_get_board(my_san->san,input_int, my_san->size_of_san));
 }
 
 PG_FUNCTION_INFO_V1(hasOpening);
 Datum hasOpening(PG_FUNCTION_ARGS) {
-    char *input_str_one = text_to_cstring(PG_GETARG_TEXT_P(0)); // Convert text to C string
-    char *input_str_two = text_to_cstring(PG_GETARG_TEXT_P(1));
-    PG_RETURN_BOOL(internal_has_opening(input_str_one,input_str_two));
+    San *my_san_one = PG_GETARG_SAN_P(0); // Get input san pointer
+    San *my_san_two = PG_GETARG_SAN_P(1); // Get input san pointer
+    PG_RETURN_BOOL(internal_has_opening(my_san_one->san,my_san_two->san));
 }
 
 PG_FUNCTION_INFO_V1(hasBoard);
@@ -361,7 +358,10 @@ char* get_only_board(SCL_Board board){
     return parseSolution;
 }
 
-char* internal_get_board(const char* PGN, int N){
+char* internal_get_board(const char* PGN, int N, int san_size){
+    if(san_size < N){
+        N = san_size;
+    }
     char turn[3], moves[5], bits[10], castling[6], en_passant[3];
     char cols[8][2] = {"a","b","c","d","e","f","g","h"};
     strcpy(turn,"");//Copy empty stream into the char to remove unwanted artifacts
@@ -381,7 +381,6 @@ char* internal_get_board(const char* PGN, int N){
     uint16_t halfMoves = (uint16_t) N;
     SCL_recordApply(record, board, halfMoves);//Applies the record of moves one after another on a board
     char *parseSolution = get_only_board(board);
-    //ereport(INFO, errmsg("%x", board[64]));
     uint8_t white_turn =  SCL_boardWhitesTurn(board);
     if (white_turn == 0) {//Holds playing color (0 = white)
         sprintf(turn, " w");
