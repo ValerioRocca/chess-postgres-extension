@@ -16,8 +16,13 @@ PG_MODULE_MAGIC;
 #define PG_GETARG_FEN_P(n) DatumGetFenP(PG_GETARG_DATUM(n))
 #define PG_RETURN_FEN_P(x) return FenPGetDatum(x)
 
+#define DatumGetSanP(X) ((San *) DatumGetPointer(X))
+#define SanPGetDatum(X) PointerGetDatum(X)
+#define PG_GETARG_SAN_P(n) DatumGetSanP(PG_GETARG_DATUM(n))
+#define PG_RETURN_SAN_P(x) return SanPGetDatum(x)
+
 typedef struct {
-    char board[8][9];//max size<90
+    char* board[8];//max size<90
     char turn[2];
     char rock[5];
     char en_passant[3];
@@ -25,8 +30,14 @@ typedef struct {
     char full_move[3];
 } Fen;
 
-bool text_eq(text *text_one, text *text_two);
+typedef struct {
+    char* san;
+    int size_of_san;
+} San;
+
+bool text_eq(San *san_one, San *san_two);
 Fen *fen_constructor(char *fen_char);
+San *san_constructor(char *san_char);
 char* internal_get_first_moves(const char* PGN, int N);
 char* internal_get_board(const char* PGN, int N);
 bool internal_has_opening(const char* PGNone, const char* PGNtwo);
@@ -37,65 +48,76 @@ void free_str_matrix(char **matrix, int rows);
 PG_FUNCTION_INFO_V1(san_input);
 Datum san_input(PG_FUNCTION_ARGS) {
     char *input_str = PG_GETARG_CSTRING(0);
-    text *input_text = cstring_to_text(input_str); // Convert char * to text
-    PG_RETURN_TEXT_P(input_text); // Return the text data type
+    PG_RETURN_SAN_P(san_constructor(input_str));// Return the san data type
 }
 
 PG_FUNCTION_INFO_V1(san_output);
 Datum san_output(PG_FUNCTION_ARGS) {
-    text *output_text = PG_GETARG_TEXT_P(0); // Get input text as a text pointer
-    char *output = text_to_cstring(output_text); // Convert text to C string
-    PG_RETURN_CSTRING(output);
+    San *my_san = PG_GETARG_SAN_P(0);
+    char *result = (char *)palloc(sizeof(my_san->san)+1);
+    strcpy(result, my_san->san);
+    PG_FREE_IF_COPY(my_san,0);
+    PG_RETURN_CSTRING(result);
 }
 
 PG_FUNCTION_INFO_V1(san_eq);
 Datum san_eq(PG_FUNCTION_ARGS) {
-    PG_RETURN_BOOL(text_eq(PG_GETARG_TEXT_PP(0),PG_GETARG_TEXT_PP(1)));
+    PG_RETURN_BOOL(text_eq(PG_GETARG_SAN_P(0),PG_GETARG_SAN_P(1)));
 }
 PG_FUNCTION_INFO_V1(san_ne);
 Datum san_ne(PG_FUNCTION_ARGS) {
-    PG_RETURN_BOOL(!text_eq(PG_GETARG_TEXT_PP(0),PG_GETARG_TEXT_PP(1)));
+    PG_RETURN_BOOL(!text_eq(PG_GETARG_SAN_P(0),PG_GETARG_SAN_P(1)));
 }
 
 PG_FUNCTION_INFO_V1(san_lt_2);
 Datum san_lt_2(PG_FUNCTION_ARGS) {
-  if (strcmp(PG_GETARG_TEXT_PP(0), PG_GETARG_TEXT_PP(1)) < 0) {
-    PG_RETURN_BOOL(1); // true
-  } else {
-    PG_RETURN_BOOL(0); // false
-  }
+    San* san_one = PG_GETARG_SAN_P(0);
+    San* san_two = PG_GETARG_SAN_P(1);
+    if (strcmp(san_one->san, san_two->san) < 0) {
+        PG_RETURN_BOOL(1); // true
+    } else {
+        PG_RETURN_BOOL(0); // false
+    }
 }
 
 PG_FUNCTION_INFO_V1(san_le_2);
 Datum san_le_2(PG_FUNCTION_ARGS) {
-  if (strcmp(PG_GETARG_TEXT_PP(0), PG_GETARG_TEXT_PP(1)) <= 0) {
-    PG_RETURN_BOOL(1); // true
-  } else {
-    PG_RETURN_BOOL(0); // false
-  }
+    San* san_one = PG_GETARG_SAN_P(0);
+    San* san_two = PG_GETARG_SAN_P(1);
+    if (strcmp(san_one->san, san_two->san) <= 0) {
+        PG_RETURN_BOOL(1); // true
+    } else {
+        PG_RETURN_BOOL(0); // false
+    }
 }
 
 PG_FUNCTION_INFO_V1(san_gt_2); // >
 Datum san_gt_2(PG_FUNCTION_ARGS) {
-  if (strcmp(PG_GETARG_TEXT_PP(0), PG_GETARG_TEXT_PP(1)) > 0) {
-    PG_RETURN_BOOL(1); // true
-  } else {
-    PG_RETURN_BOOL(0); // false
-  }
+    San* san_one = PG_GETARG_SAN_P(0);
+    San* san_two = PG_GETARG_SAN_P(1);
+    if (strcmp(san_one->san, san_two->san) > 0) {
+        PG_RETURN_BOOL(1); // true
+    } else {
+        PG_RETURN_BOOL(0); // false
+    }
 }
 
 PG_FUNCTION_INFO_V1(san_ge_2);
 Datum san_ge_2(PG_FUNCTION_ARGS) {
-   if (strcmp(PG_GETARG_TEXT_PP(0), PG_GETARG_TEXT_PP(1)) >= 0) {
-    PG_RETURN_BOOL(1); // true
-  } else {
-    PG_RETURN_BOOL(0); // false
-  }
+    San* san_one = PG_GETARG_SAN_P(0);
+    San* san_two = PG_GETARG_SAN_P(1);
+    if (strcmp(san_one->san, san_two->san) >= 0) {
+        PG_RETURN_BOOL(1); // true
+    } else {
+        PG_RETURN_BOOL(0); // false
+    }
 }
 
 PG_FUNCTION_INFO_V1(san_cmp_2);
 Datum san_cmp_2(PG_FUNCTION_ARGS) {
-  PG_RETURN_INT64(strcmp(PG_GETARG_TEXT_PP(0), PG_GETARG_TEXT_PP(1)));
+    San* san_one = PG_GETARG_SAN_P(0);
+    San* san_two = PG_GETARG_SAN_P(1);
+    PG_RETURN_INT64(strcmp(san_one->san, san_two->san));
 }
 
 
@@ -112,39 +134,38 @@ Datum fen_input(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(fen_output);
 Datum fen_output(PG_FUNCTION_ARGS) {
-    Fen *fen = PG_GETARG_FEN_P(0); // Get input text as a text pointer
-    char *result = palloc0(sizeof(100));
-    int len = 100;//87
-    snprintf(result,len,"%s/%s/%s/%s/%s/%s/%s/%s %s %s %s %s %s", fen->board[0],fen->board[1],fen->board[2],fen->board[3],fen->board[4],fen->board[5]
+    Fen *fen = PG_GETARG_FEN_P(0);
+    char *result = psprintf("%s/%s/%s/%s/%s/%s/%s/%s %s %s %s %s %s", fen->board[0],fen->board[1],fen->board[2],fen->board[3],fen->board[4],fen->board[5]
             ,fen->board[6],fen->board[7],fen->turn,fen->rock,fen->en_passant,fen->half_move,fen->full_move);
+    PG_FREE_IF_COPY(fen,0);
     PG_RETURN_CSTRING(result);
 }
 
-PG_FUNCTION_INFO_V1(get_first_moves);
-Datum get_first_moves(PG_FUNCTION_ARGS) {
+PG_FUNCTION_INFO_V1(getFirstMoves);
+Datum getFirstMoves(PG_FUNCTION_ARGS) {
     text *input_text = PG_GETARG_TEXT_P(0); // Get input text as a text pointer
     char *input_str = text_to_cstring(input_text); // Convert text to C string
     int input_int = PG_GETARG_INT32(1);
     PG_RETURN_CSTRING(internal_get_first_moves(input_str,input_int));
 }
 
-PG_FUNCTION_INFO_V1(get_board);
-Datum get_board(PG_FUNCTION_ARGS) {
+PG_FUNCTION_INFO_V1(getBoard);
+Datum getBoard(PG_FUNCTION_ARGS) {
     text *input_text = PG_GETARG_TEXT_P(0); // Get input text as a text pointer
     char *input_str = text_to_cstring(input_text); // Convert text to C string
     int input_int = PG_GETARG_INT32(1);
     PG_RETURN_CSTRING(internal_get_board(input_str,input_int));
 }
 
-PG_FUNCTION_INFO_V1(has_opening);
-Datum has_opening(PG_FUNCTION_ARGS) {
+PG_FUNCTION_INFO_V1(hasOpening);
+Datum hasOpening(PG_FUNCTION_ARGS) {
     char *input_str_one = text_to_cstring(PG_GETARG_TEXT_P(0)); // Convert text to C string
     char *input_str_two = text_to_cstring(PG_GETARG_TEXT_P(1));
     PG_RETURN_BOOL(internal_has_opening(input_str_one,input_str_two));
 }
 
-PG_FUNCTION_INFO_V1(has_board);
-Datum has_board(PG_FUNCTION_ARGS) {
+PG_FUNCTION_INFO_V1(hasBoard);
+Datum hasBoard(PG_FUNCTION_ARGS) {
     char *input_san = text_to_cstring(PG_GETARG_TEXT_P(0)); // Convert text to C string
     Fen *fen = PG_GETARG_FEN_P(1); // Get input text as a text pointer
     char *input_fen = palloc0(sizeof(100));
@@ -155,16 +176,23 @@ Datum has_board(PG_FUNCTION_ARGS) {
     PG_RETURN_BOOL(internal_has_board(input_san,input_fen,input_int));
 }
 
-bool text_eq(text *text_one, text *text_two) {
-    char *string_one = text_to_cstring(text_one); // Convert text to C string
-    char *string_two = text_to_cstring(text_two); // Convert text to C string
-    int result = strcmp(string_one, string_two);
+bool text_eq(San *san_one, San *san_two) {
+    int result = strcmp(san_one->san, san_two->san);
     bool areEqual = (result == 0);
     return areEqual;
 }
 
+San *san_constructor(char *san_char){
+    SCL_Record r;
+    SCL_recordFromPGN(r, san_char);
+    San *my_san = (San *)palloc0(sizeof(San));
+    my_san->size_of_san = (int)SCL_recordLength(r);
+    my_san->san = internal_get_first_moves(san_char, my_san->size_of_san);
+    return my_san;
+}
+
 Fen *fen_constructor(char *fen_char){
-    Fen *my_fen = palloc0(sizeof(Fen)+1);// todo remove the +1 on every char of the struct Fen and retry
+    Fen *my_fen = palloc0(sizeof(Fen)+1);
     const char delimiters[] = " /";
     char *token;
     int count = 0;
@@ -174,6 +202,7 @@ Fen *fen_constructor(char *fen_char){
     // Keep printing tokens until no more tokens are available
     while (token != NULL && count <= 12) {
         if(count <= 7){
+            my_fen->board[count] = (char*)malloc(sizeof(token)+1);
             strcpy(my_fen->board[count],token);
         }
         switch(count) {
@@ -207,18 +236,18 @@ Fen *fen_constructor(char *fen_char){
 char ** str_matrix_allocation(int rows, int columns){
     char **result;
     // Allocate memory for rows
-    result = (char **)malloc(rows * sizeof(char *));
+    result = (char **)palloc(rows * sizeof(char *));
     for (int i = 0; i < rows; i++) {
-        result[i] = (char *)malloc(columns * sizeof(char));
+        result[i] = (char *)palloc(columns * sizeof(char));
     }
     return result;
 }
 
 void free_str_matrix(char **matrix, int rows){
     for (int i = 0; i < rows; i++) {
-        free(matrix[i]);
+        //pfree(matrix[i]);
     }
-    free(matrix);
+    //pfree(matrix);
 }
 
 char* internal_get_first_moves(const char* PGN, int N){
@@ -229,12 +258,12 @@ char* internal_get_first_moves(const char* PGN, int N){
 
     //char firstMoves[N+fullMoves][7];//list of moves (Move #, half move white, half move black)
     char **firstMoves = str_matrix_allocation(N+fullMoves,7);//list of moves (Move #, half move white, half move black)
-    char* firstMovesSolution = (char*)malloc(((N+fullMoves)*7) * sizeof(char));
+    char* firstMovesSolution = (char*)malloc(((N+fullMoves)*7) * sizeof(char)+1);
     strcpy(firstMovesSolution, "");//Copy empty stream into the char* to remove unwanted artifacts
 
     if(N>0) {//only if we need at least one half-move
         size_t length = strlen(PGN);
-        char *PGNcopy = (char*)malloc(length+1);
+        char *PGNcopy = (char*)palloc(length+1);
         strcpy(PGNcopy, PGN);//copy the const PGN so whe can modify it
 
         const char *separators = " .";//separators are " " and ".", so the notation accepted are {1. e3 E5 2. a3 ...} and {1.e3 E5 2.a3 ...}
@@ -283,7 +312,7 @@ char* internal_get_first_moves(const char* PGN, int N){
         for (int i = 0; i < count + 1; i++) {//iteration to concatenate the list of move numbers and half moves into a single string
             strcat(firstMovesSolution, firstMoves[i]);
         }
-        free(PGNcopy);
+        //pfree(PGNcopy);
     }
     free_str_matrix(firstMoves,N+fullMoves);
     return firstMovesSolution;
@@ -291,11 +320,11 @@ char* internal_get_first_moves(const char* PGN, int N){
 
 char* get_only_board(SCL_Board board){
     char* solution;
-    solution = (char*)malloc(85 * sizeof(char));
+    solution = (char*)palloc(85 * sizeof(char));
     strcpy(solution, "");
     int t = SCL_boardToFEN(board, solution);
     strcpy(solution, board);
-    char* parseSolution = (char*)malloc(85 * sizeof(char));
+    char* parseSolution = (char*)palloc0(85 * sizeof(char));
     strcpy(parseSolution, "");
     int count = 0;
     char strcount[2];
@@ -328,7 +357,7 @@ char* get_only_board(SCL_Board board){
         }
 
     }
-    free(solution);
+    //pfree(solution);
     return parseSolution;
 }
 
@@ -359,7 +388,6 @@ char* internal_get_board(const char* PGN, int N){
     } else {
         sprintf(turn, " b");
     }
-
     sprintf(moves, " %d %d", board[66], (int) floor(board[65] / 2));//half moves since the last capture or pawn advanced and number of full moves
     strcat(parseSolution, turn);//Writes which color has to play
     sprintf(bits,"%x",board[64]);
@@ -399,7 +427,7 @@ char* internal_get_board(const char* PGN, int N){
     strcat(parseSolution, castling);//Writes the castlings
     strcat(parseSolution, en_passant);//Writes the en passant target square
     strcat(parseSolution, moves);//Writes half moves since the last capture or pawn advanced and number of full moves
-    free(firstMoves);
+    //pfree(firstMoves);
     return parseSolution;
 }
 
@@ -407,12 +435,12 @@ bool internal_has_opening(const char* PGNone, const char* PGNtwo){
     bool solution = true;
 
     size_t lengthOne = strlen(PGNone);
-    char *PGNoneCopy = (char*)malloc(lengthOne+1);
+    char *PGNoneCopy = (char*)palloc(lengthOne+1);
     strcpy(PGNoneCopy, PGNone);//copy the const PGN so whe can modify it
     char* pointerOne = NULL;
 
     size_t lengthTwo = strlen(PGNtwo);
-    char *PGNtwoCopy = (char*)malloc(lengthTwo+1);
+    char *PGNtwoCopy = (char*)palloc(lengthTwo+1);
     strcpy(PGNtwoCopy, PGNtwo);//copy the const PGN so whe can modify it
     char* pointerTwo = NULL;
 
@@ -430,8 +458,8 @@ bool internal_has_opening(const char* PGNone, const char* PGNtwo){
     if(strTokenOne == NULL && strTokenTwo != NULL && solution){//if the chess game we are looking into finishes before the reference chess game
         solution = false;
     }
-    free(PGNoneCopy);
-    free(PGNtwoCopy);
+    //pfree(PGNoneCopy);
+    //pfree(PGNtwoCopy);
     return solution;
 }
 
@@ -460,11 +488,33 @@ bool internal_has_board(const char* PGN, const char* FEN, int N){
         tempFirstMovesBoard = get_only_board(board);//getting the FEN of the board state for every half move played
         found = strcmp(tempFirstMovesBoard, FEN);//compare the board state every time a move is played
         countHalfMoves += 1;
-        free(tempFirstMovesBoard);
-        free(firstMoves);
+        //pfree(tempFirstMovesBoard);
+        //pfree(firstMoves);
     }
     if((countHalfMoves == N+1 && found != 0) || N<0){//verify if we have found the board state or if we have finished iterating without finding anything
         solution = false;
     }
     return solution;
 }
+
+/*
+void is_san(char *san){
+    try{
+        SCL_Record r;
+        SCL_recordFromPGN(r, san);
+    }
+    catch{
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                        errmsg("Invalid san input: %s", san)));
+    }
+}
+void is_fen(char *fen){
+    SCL_Board board;
+    if(SCL_boardFromFEN(board,fen) == 0){
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                        errmsg("Invalid fen input: %s", fen)));
+    }
+}
+ */
