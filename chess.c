@@ -2,6 +2,7 @@
 #include "utils/builtins.h"
 #include "libpq/pqformat.h"
 #include "fmgr.h"
+#include "access/gin.h"
 #include "smallchesslib.h"
 #include <string.h>
 #include <math.h>
@@ -45,6 +46,7 @@ bool internal_has_opening(const char* PGNone, const char* PGNtwo);
 bool internal_has_board(San *my_san, const char* FEN, int N);
 char ** str_matrix_allocation(int rows, int columns);
 void free_str_matrix(char **matrix, int rows);
+char* get_only_board(SCL_Board board);
 
 PG_FUNCTION_INFO_V1(san_input);
 Datum san_input(PG_FUNCTION_ARGS) {
@@ -235,6 +237,92 @@ Datum hasBoard(PG_FUNCTION_ARGS) {
             ,fen->board[6],fen->board[7]);
     int input_int = PG_GETARG_INT32(2);
     PG_RETURN_BOOL(internal_has_board(my_san,input_fen,input_int));
+}
+
+//PG_FUNCTION_INFO_V1(extract_value);
+Datum *extract_value(Datum itemValue, int32 *nkeys, bool **nullFlags){
+
+    //extract custom data types
+    San* my_san = (San*) DatumGetPointer(itemValue);
+    nkeys = &my_san->size_of_san;
+
+    SCL_Record record;
+    SCL_Board board;
+    SCL_boardInit(board);
+    SCL_recordFromPGN(record, my_san->san);
+    Datum* result = (Datum*)palloc0(100*my_san->size_of_san);
+
+    char* tempFirstMovesBoard;
+    int countHalfMoves = 0;//start the half moves counter at one
+
+    uint8_t squareFrom;
+    uint8_t squareTo;
+    char promotedPiece;
+    uint8_t getMove;
+    SCL_recordFromPGN(record, my_san->san);
+    SCL_Game *game = (SCL_Game *)palloc0(sizeof(SCL_Game));
+    SCL_gameInit(game, 0);
+    while((countHalfMoves<my_san->size_of_san+1)){//stop when we have verified all the half moves or if we find the board state
+        getMove = SCL_recordGetMove(record, countHalfMoves, &squareFrom, &squareTo, &promotedPiece);
+        SCL_gameMakeMove(game, squareFrom, squareTo, promotedPiece);
+        tempFirstMovesBoard = get_only_board(game->board);//getting the FEN of the board state for every half move played
+        countHalfMoves += 1;
+        result[countHalfMoves] = tempFirstMovesBoard;
+        pfree(tempFirstMovesBoard);
+    }
+
+    return result;
+
+}
+
+//PG_FUNCTION_INFO_V1(extractQuery);
+static Datum *extractQuery(Datum query, int32 *nkeys, int n, bool **pmatch, Pointer **extra_data, bool **nullFlags, int32 *searchMode){
+    Datum *board_datum;
+
+    //extract custom data for datum
+    char* str_fen = DatumGetCString(DirectFunctionCall1(int4out, query));
+    Fen* fen = fen_constructor(str_fen);
+    char *board = palloc0(sizeof(100));
+    int len = 100;//87
+    snprintf(board,len,"%s/%s/%s/%s/%s/%s/%s/%s", fen->board[0],fen->board[1],fen->board[2],fen->board[3],fen->board[4],fen->board[5],fen->board[6],fen->board[7]);
+    board_datum=(Datum*)CStringGetDatum(board);
+    *nkeys=1;
+
+    return board;
+}
+
+int compare(Datum a, Datum b){
+    //extract custom data type
+    char* board_one = DatumGetCString(DirectFunctionCall1(int4out, a));
+    char* board_two = DatumGetCString(DirectFunctionCall1(int4out, b));
+
+    int size_board_one = 0;
+    int size_board_two = 0;
+    for(int i=0; board_one != '\0'; i++){
+        if (isalnum(board_one[i])){
+            size_board_one += (int)(board_one[i]);
+        }
+    }
+    for(int i=0; board_two != '\0'; i++){
+        if (isalnum(board_two[i])){
+            size_board_two += (int)(board_two[i]);
+        }
+    }
+    size_board_one=64-size_board_one;
+    size_board_two=64-size_board_two;
+
+    //compare the values
+    if (size_board_one<size_board_two) return -1;
+    else if (size_board_one>size_board_two) return 1;
+    else return 0;
+}
+
+GinTernaryValue triConsistent(GinTernaryValue check[], int n, Datum query, int32 nkeys, Pointer extra_data[], Datum queryKeys[], bool nullFlags[]){
+    return check[0] ;
+}
+
+bool consistent(bool check[], int n, Datum query, int32 nkeys, Pointer extra_data[], bool *recheck, Datum queryKeys[], bool nullFlags[]){
+    return check[0];
 }
 
 bool text_eq(San *san_one, San *san_two) {
