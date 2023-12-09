@@ -40,10 +40,10 @@ FROM games_100
 WHERE hasOpening(notation, '1.e4 '::san);
 
 select hasBoard(notation,'RNBQKBNR/PPPP1PPP/8/8/3P4/8/ppp1pppp/rnbqkbnr w KQkq - 0 1', 200)
-from games_1;
+from games_100;
 
 select *
-from games_1
+from games_100
 where hasBoard(notation,'RNBQKBNR/PPPP1PPP/8/8/3P4/8/ppp1pppp/rnbqkbnr w KQkq - 0 1', 200);
 
 
