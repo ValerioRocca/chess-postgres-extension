@@ -231,7 +231,7 @@ PG_FUNCTION_INFO_V1(hasBoard);
 Datum hasBoard(PG_FUNCTION_ARGS) {
     San *my_san = PG_GETARG_SAN_P(0);
     Fen *fen = PG_GETARG_FEN_P(1); // Get input text as a text pointer
-    char *input_fen = palloc0(sizeof(100));
+    char *input_fen = (char *)palloc0(sizeof(char)*100);
     int len = 100;//87
     snprintf(input_fen,len,"%s/%s/%s/%s/%s/%s/%s/%s", fen->board[0],fen->board[1],fen->board[2],fen->board[3],fen->board[4],fen->board[5]
             ,fen->board[6],fen->board[7]);
@@ -267,7 +267,7 @@ Datum *extract_value(Datum itemValue, int32 *nkeys, bool **nullFlags){
         SCL_gameMakeMove(game, squareFrom, squareTo, promotedPiece);
         tempFirstMovesBoard = get_only_board(game->board);//getting the FEN of the board state for every half move played
         countHalfMoves += 1;
-        result[countHalfMoves] = (Datum *)CStringGetDatum(tempFirstMovesBoard);
+        result[countHalfMoves] = CStringGetDatum(tempFirstMovesBoard);
         pfree(tempFirstMovesBoard);
     }
 
@@ -543,7 +543,6 @@ char* internal_get_board(const char* PGN, int N, int san_size){
     sprintf(moves, " %d %d", board[66], (int) floor(board[65] / 2));//half moves since the last capture or pawn advanced and number of full moves
     strcat(parseSolution, turn);//Writes which color has to play
     sprintf(bits,"%x",board[64]);
-    //ereport(INFO, errmsg("%x", board[64]));
     if('f' == bits[3]){
         castling_count += 1;
         strcat(castling, "K");
@@ -631,15 +630,20 @@ bool internal_has_board(San *my_san, const char* FEN, int N){
     SCL_recordFromPGN(record, my_san->san);
     game = (SCL_Game *)palloc0(sizeof(SCL_Game));
     SCL_gameInit(game, 0);
+    int first = 1;
     while((countHalfMoves<N+1 && found != 0 && countHalfMoves<my_san->size_of_san+1)){//stop when we have verified all the half moves or if we find the board state
-        getMove = SCL_recordGetMove(record, countHalfMoves, &squareFrom, &squareTo, &promotedPiece);
-        SCL_gameMakeMove(game, squareFrom, squareTo, promotedPiece);
+        if (first == 0) {
+            getMove = SCL_recordGetMove(record, countHalfMoves, &squareFrom, &squareTo, &promotedPiece);
+            SCL_gameMakeMove(game, squareFrom, squareTo, promotedPiece);
+        }
+        if(first == 0){
+            countHalfMoves += 1;
+        }
+        first = 0;
         tempFirstMovesBoard = get_only_board(game->board);//getting the FEN of the board state for every half move played
         found = strcmp(tempFirstMovesBoard, FEN);
-        countHalfMoves += 1;
         pfree(tempFirstMovesBoard);
     }
-    ereport(INFO,errmsg("End While"));
     if(((countHalfMoves == N+1 || countHalfMoves == my_san->size_of_san+1) && found != 0) || N<0){//verify if we have found the board state or if we have finished iterating without finding anything
         solution = false;
     }
