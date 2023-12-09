@@ -267,7 +267,7 @@ Datum *extract_value(Datum itemValue, int32 *nkeys, bool **nullFlags){
         SCL_gameMakeMove(game, squareFrom, squareTo, promotedPiece);
         tempFirstMovesBoard = get_only_board(game->board);//getting the FEN of the board state for every half move played
         countHalfMoves += 1;
-        result[countHalfMoves] = tempFirstMovesBoard;
+        result[countHalfMoves] = (Datum *)CStringGetDatum(tempFirstMovesBoard);
         pfree(tempFirstMovesBoard);
     }
 
@@ -285,7 +285,7 @@ static Datum *extractQuery(Datum query, int32 *nkeys, int n, bool **pmatch, Poin
     char *board = palloc0(sizeof(100));
     int len = 100;//87
     snprintf(board,len,"%s/%s/%s/%s/%s/%s/%s/%s", fen->board[0],fen->board[1],fen->board[2],fen->board[3],fen->board[4],fen->board[5],fen->board[6],fen->board[7]);
-    board_datum=(Datum*)CStringGetDatum(board);
+    board_datum=(Datum *)CStringGetDatum(board);
     *nkeys=1;
 
     return board;
