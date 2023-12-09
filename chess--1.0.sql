@@ -76,6 +76,37 @@ LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 
 
+CREATE OR REPLACE FUNCTION san_eq_num(san, int)
+    RETURNS boolean
+AS 'MODULE_PATHNAME','san_eq_num'
+    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION san_ne_num(san, int)
+    RETURNS boolean
+AS 'MODULE_PATHNAME','san_ne_num'
+    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION san_lt_num(san, int)
+    RETURNS BOOLEAN
+AS 'MODULE_PATHNAME','san_lt_num'
+    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION san_le_num(san, int)
+    RETURNS BOOLEAN
+AS 'MODULE_PATHNAME','san_le_num'
+    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION san_gt_num(san, int)
+    RETURNS BOOLEAN
+AS 'MODULE_PATHNAME','san_gt_num'
+    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION san_ge_num(san, int)
+    RETURNS BOOLEAN
+AS 'MODULE_PATHNAME','san_ge_num'
+    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+
 
 /*
  *FUNCTIONS
@@ -113,6 +144,17 @@ CREATE OPERATOR = (
 
 COMMENT ON OPERATOR =(san, san) IS 'equals?';
 
+CREATE OPERATOR = (
+    LEFTARG = san,
+    RIGHTARG = int,
+    PROCEDURE = san_eq_num,
+    COMMUTATOR = =,
+    NEGATOR = <>
+    );
+
+
+COMMENT ON OPERATOR =(san, int) IS 'equals?';
+
 CREATE OPERATOR <> (
 	LEFTARG = san,
 	RIGHTARG = san,
@@ -121,6 +163,15 @@ CREATE OPERATOR <> (
 	NEGATOR = =
 );
 COMMENT ON OPERATOR <>(san, san) IS 'not equals?';
+
+CREATE OPERATOR <> (
+    LEFTARG = san,
+    RIGHTARG = int,
+    PROCEDURE = san_ne_num,
+    COMMUTATOR = <>,
+    NEGATOR = =
+    );
+COMMENT ON OPERATOR <>(san, int) IS 'not equals?';
 
 CREATE OPERATOR < (
 	LEFTARG = san,
@@ -131,6 +182,15 @@ CREATE OPERATOR < (
 );
 COMMENT ON OPERATOR <(san, san) IS 'less-than';
 
+CREATE OPERATOR < (
+    LEFTARG = san,
+    RIGHTARG = int,
+    PROCEDURE = san_lt_num,
+    COMMUTATOR = > ,
+    NEGATOR = >=
+    );
+COMMENT ON OPERATOR <(san, int) IS 'less-than';
+
 CREATE OPERATOR <= (
 	LEFTARG = san,
 	RIGHTARG = san,
@@ -139,6 +199,15 @@ CREATE OPERATOR <= (
 	NEGATOR = > 
 );
 COMMENT ON OPERATOR <=(san, san) IS 'less-than-or-equal';
+
+CREATE OPERATOR <= (
+    LEFTARG = san,
+    RIGHTARG = int,
+    PROCEDURE = san_le_num,
+    COMMUTATOR = >= ,
+    NEGATOR = >
+    );
+COMMENT ON OPERATOR <=(san, int) IS 'less-than-or-equal';
 
 CREATE OPERATOR > (
 	LEFTARG = san,
@@ -149,6 +218,15 @@ CREATE OPERATOR > (
 );
 COMMENT ON OPERATOR >(san, san) IS 'greater-than';
 
+CREATE OPERATOR > (
+    LEFTARG = san,
+    RIGHTARG = int,
+    PROCEDURE = san_gt_num,
+    COMMUTATOR = < ,
+    NEGATOR = <=
+    );
+COMMENT ON OPERATOR >(san, int) IS 'greater-than';
+
 CREATE OPERATOR >= (
 	LEFTARG = san,
 	RIGHTARG = san,
@@ -157,6 +235,15 @@ CREATE OPERATOR >= (
 	NEGATOR = < 
 );
 COMMENT ON OPERATOR >=(san, san) IS 'greater-than-or-equal';
+
+CREATE OPERATOR >= (
+    LEFTARG = san,
+    RIGHTARG = int,
+    PROCEDURE = san_ge_num,
+    COMMUTATOR = <= ,
+    NEGATOR = <
+    );
+COMMENT ON OPERATOR >=(san, int) IS 'greater-than-or-equal';
 
 CREATE OPERATOR CLASS btree_san
 DEFAULT FOR TYPE san USING btree
