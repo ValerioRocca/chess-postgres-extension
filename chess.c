@@ -42,7 +42,7 @@ Fen *fen_constructor(char *fen_char);
 San *san_constructor(char *san_char);
 char* internal_get_first_moves(const char* PGN, int N);
 char* internal_get_board(const char* PGN, int N,int san_size);
-bool internal_has_opening(const char* PGNone, const char* PGNtwo);
+bool internal_has_opening(San *my_san_one, San *my_san_two);
 bool internal_has_board(San *my_san, const char* FEN, int N);
 char ** str_matrix_allocation(int rows, int columns);
 void free_str_matrix(char **matrix, int rows);
@@ -258,7 +258,6 @@ Datum getBoard(PG_FUNCTION_ARGS) {
     int input_int = PG_GETARG_INT32(1);
     char *result = internal_get_board(my_san->san,input_int, my_san->size_of_san);
     free(my_san->san);
-    PG_FREE_IF_COPY(my_san, 0);
     PG_RETURN_CSTRING(result);
 }
 
@@ -266,11 +265,7 @@ PG_FUNCTION_INFO_V1(hasOpening);
 Datum hasOpening(PG_FUNCTION_ARGS) {
     San *my_san_one = PG_GETARG_SAN_P(0); // Get input san pointer
     San *my_san_two = PG_GETARG_SAN_P(1); // Get input san pointer
-    bool result = internal_has_opening(my_san_one->san,my_san_two->san);
-    free(my_san_one->san);
-    free(my_san_two->san);
-    PG_FREE_IF_COPY(my_san_one, 0);
-    PG_FREE_IF_COPY(my_san_two, 0);
+    int result = internal_has_opening(my_san_one,my_san_two);
     PG_RETURN_BOOL(result);
 }
 
@@ -282,14 +277,8 @@ Datum hasBoard(PG_FUNCTION_ARGS) {
     int len = 100;//87
     snprintf(input_fen,len,"%s/%s/%s/%s/%s/%s/%s/%s", fen->board[0],fen->board[1],fen->board[2],fen->board[3],fen->board[4],fen->board[5]
             ,fen->board[6],fen->board[7]);
-    for(int i=0;i<8;i++){
-        free(fen->board[i]);
-    }
     int input_int = PG_GETARG_INT32(2);
     bool result = internal_has_board(my_san,input_fen,input_int);
-    PG_FREE_IF_COPY(input_fen, 0);
-    PG_FREE_IF_COPY(my_san, 0);
-    PG_FREE_IF_COPY(fen, 0);
     PG_RETURN_BOOL(result);
 }
 
@@ -480,9 +469,9 @@ char ** str_matrix_allocation(int rows, int columns){
 
 void free_str_matrix(char **matrix, int rows){
     for (int i = 0; i < rows; i++) {
-        //pfree(matrix[i]);
+        pfree(matrix[i]);
     }
-    //pfree(matrix);
+    pfree(matrix);
 }
 
 char* internal_get_first_moves(const char* PGN, int N){
@@ -667,34 +656,15 @@ char* internal_get_board(const char* PGN, int N, int san_size){
     return parseSolution;
 }
 
-bool internal_has_opening(const char* PGNone, const char* PGNtwo){
+bool internal_has_opening(San *my_san_one, San *my_san_two){
+    SCL_Record r_one;
+    SCL_Record r_two;
+    SCL_recordFromPGN(r_one, my_san_one->san);
+    SCL_recordFromPGN(r_two, my_san_two->san);
+    if(my_san_two->size_of_san>my_san_one->size_of_san){return false;}
     bool solution = true;
-
-    size_t lengthOne = strlen(PGNone);
-    char *PGNoneCopy = (char*)palloc(lengthOne+1);
-    strcpy(PGNoneCopy, PGNone);//copy the const PGN so whe can modify it
-    char* pointerOne = NULL;
-
-    size_t lengthTwo = strlen(PGNtwo);
-    char *PGNtwoCopy = (char*)palloc(lengthTwo+1);
-    strcpy(PGNtwoCopy, PGNtwo);//copy the const PGN so whe can modify it
-    char* pointerTwo = NULL;
-
-    const char *separators = " .";//separators are " " and ".", so the notation accepted are {1. e3 E5 2. a3 ...} and {1.e3 E5 2.a3 ...}
-
-    char *strTokenOne = strtok_r(PGNoneCopy, separators,&pointerOne);//recuperating the first character before a point or a space
-    char *strTokenTwo = strtok_r(PGNtwoCopy, separators,&pointerTwo);//recuperating the first character before a point or a space
-    while (strTokenOne != NULL && strTokenTwo != NULL && solution) {//stop when we read all the PGN or we read all the half moves we needed
-        if(strcmp(strTokenOne, strTokenTwo) != 0) {//compare the next move number with the one where we should stop
-            solution = false;
-        }
-        strTokenOne = strtok_r(NULL, separators, &pointerOne);//recuperating the next character before a point or a space
-        strTokenTwo = strtok_r(NULL, separators, &pointerTwo);//recuperating the next character before a point or a space
-    }
-    if(strTokenOne == NULL && strTokenTwo != NULL && solution){//if the chess game we are looking into finishes before the reference chess game
-        solution = false;
-    }
-    return solution;
+    char* new_san_one = internal_get_first_moves(my_san_one->san,my_san_two->size_of_san);
+    return (strcmp(new_san_one, my_san_two->san)==0);
 }
 
 bool internal_has_board(San *my_san, const char* FEN, int N){
@@ -703,7 +673,6 @@ bool internal_has_board(San *my_san, const char* FEN, int N){
     char* firstMoves;
     uint16_t halfMoves;
     char* tempFirstMovesBoard;
-
     bool solution = true;
     int countHalfMoves = 0;//start the half moves counter at one
     int found = 1;//found the game state is false by default
@@ -715,21 +684,16 @@ bool internal_has_board(San *my_san, const char* FEN, int N){
     SCL_recordFromPGN(record, my_san->san);
     game = (SCL_Game *)palloc0(sizeof(SCL_Game));
     SCL_gameInit(game, 0);
-    int first = 1;
-    while((countHalfMoves<N+1 && found != 0 && countHalfMoves<my_san->size_of_san+1)){//stop when we have verified all the half moves or if we find the board state
-        if (first == 0) {
-            getMove = SCL_recordGetMove(record, countHalfMoves, &squareFrom, &squareTo, &promotedPiece);
-            SCL_gameMakeMove(game, squareFrom, squareTo, promotedPiece);
-        }
+    if(strcmp(get_only_board(game->board), FEN) == 0){return true;}
+    while((countHalfMoves<N+1 && found != 0 && countHalfMoves<my_san->size_of_san)){//stop when we have verified all the half moves or if we find the board state
+        getMove = SCL_recordGetMove(record, countHalfMoves, &squareFrom, &squareTo, &promotedPiece);
+        SCL_gameMakeMove(game, squareFrom, squareTo, promotedPiece);
+        countHalfMoves += 1;
         tempFirstMovesBoard = get_only_board(game->board);//getting the FEN of the board state for every half move played
         found = strcmp(tempFirstMovesBoard, FEN);
         pfree(tempFirstMovesBoard);
-        if(first == 0){
-            countHalfMoves += 1;
-        }
-        first = 0;
     }
-    if(((countHalfMoves == N+1 || countHalfMoves == my_san->size_of_san+1) && found != 0) || N<0){//verify if we have found the board state or if we have finished iterating without finding anything
+    if(((countHalfMoves == N+1 || countHalfMoves >= my_san->size_of_san) && found != 0) || N<0){//verify if we have found the board state or if we have finished iterating without finding anything
         solution = false;
     }
     return solution;
