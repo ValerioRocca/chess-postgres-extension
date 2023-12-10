@@ -36,12 +36,9 @@ WHERE game_site = 'Leningrad';
 -- Query 3
 -- Count the number of games that start with move "1.e4"
 
-SELECT count(*)
-FROM games_100
-WHERE hasOpening(notation, '1.e4 '::san);
 
 SELECT count(*)
-FROM games_20
+FROM games_1
 WHERE hasOpening(notation, '1.e4 '::san);
 
 SELECT count(*)
@@ -49,8 +46,15 @@ FROM games_5
 WHERE hasOpening(notation, '1.e4 '::san);
 
 SELECT count(*)
-FROM games_1
+FROM games_20
 WHERE hasOpening(notation, '1.e4 '::san);
+
+SELECT count(*)
+FROM games_100
+WHERE hasOpening(notation, '1.e4 '::san);
+
+
+
 
 SELECT count(*)
 FROM games_1

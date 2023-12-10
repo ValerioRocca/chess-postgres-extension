@@ -6,6 +6,8 @@ CREATE INDEX IF NOT EXISTS san_index_1 ON games_1(notation);
 
 
 
+
+
 -- Consultas
 SET enable_seqscan TO OFF;
 SELECT count(*) FROM games_100  WHERE hasOpening(notation, '1.e4 '::san);
