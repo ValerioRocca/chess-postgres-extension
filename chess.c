@@ -1,8 +1,12 @@
 #include <postgres.h>
 #include "utils/builtins.h"
+#include "utils/varlena.h"
 #include "libpq/pqformat.h"
 #include "fmgr.h"
 #include "access/gin.h"
+#include "access/stratnum.h"
+#include "utils/memutils.h"
+#include "catalog/pg_type.h"
 #include "smallchesslib.h"
 #include <string.h>
 #include <math.h>
@@ -293,9 +297,7 @@ Datum extract_value(PG_FUNCTION_ARGS){
     //extract custom data types
     San* my_san = PG_GETARG_SAN_P(0);
     int32 *nkeys = (int32 *)PG_GETARG_POINTER(1);
-    int new_nkeys = ((my_san->size_of_san)+1);
-    nkeys = &new_nkeys;
-    Datum* result = (Datum *)palloc(sizeof(Datum)*((my_san->size_of_san)+1));
+    Datum* result = (Datum *)palloc(sizeof(Datum)*((my_san->size_of_san)));
 
     SCL_Record record;//Hold record of the game
 
@@ -307,7 +309,7 @@ Datum extract_value(PG_FUNCTION_ARGS){
     char promotedPiece;
     uint8_t getMove;
     SCL_recordFromPGN(record, my_san->san);
-    SCL_Game *game = (SCL_Game *)palloc0(sizeof(SCL_Game));
+    SCL_Game *game = (SCL_Game *)palloc(sizeof(SCL_Game));
     SCL_gameInit(game, 0);
     int first = 0;
     while((countHalfMoves<my_san->size_of_san)){//stop when we have verified all the half moves or if we find the board state
@@ -325,11 +327,14 @@ Datum extract_value(PG_FUNCTION_ARGS){
         }
         first = 1;
     }
+    int len = countHalfMoves;
+    nkeys = &len;
     PG_RETURN_POINTER(result);
 }
 
 PG_FUNCTION_INFO_V1(extract_query);
 Datum extract_query(PG_FUNCTION_ARGS){
+    ereport(INFO,errmsg("in query"));
     Datum query = PG_GETARG_DATUM(0);
     int32 *nkeys = (int32 *) PG_GETARG_POINTER(1);
     Datum *board_datum;
@@ -347,10 +352,13 @@ Datum extract_query(PG_FUNCTION_ARGS){
 
 PG_FUNCTION_INFO_V1(compare);
 Datum compare(PG_FUNCTION_ARGS){
+    if(PG_ARGISNULL(1) || PG_ARGISNULL(0)){
+        ereport(ERROR,errmsg("NULL IN GIN COMPARE FOR SAN TYPE"));
+    }
     //extract custom data type
     myGinKey *key_one = (myGinKey *)PG_GETARG_VARLENA_P(0);
-    myGinKey *key_two = (myGinKey *)PG_GETARG_VARLENA_P(1);
     char* board_one = text_to_cstring(key_one->board);
+    myGinKey *key_two = (myGinKey *)PG_GETARG_VARLENA_P(1);
     char* board_two = text_to_cstring(key_two->board);
     int32 result;
 
