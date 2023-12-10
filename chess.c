@@ -329,7 +329,7 @@ Datum compare(PG_FUNCTION_ARGS){
             size_board_one += (int)(board_one[i]);
         }
     }
-    for(int i=0; board_two != '\0'; i++){
+    for(int i=0; board_two[i] != '\0'; i++){
         if (isalnum(board_two[i])){
             size_board_two += (int)(board_two[i]);
         }
@@ -673,6 +673,7 @@ bool internal_has_board(San *my_san, const char* FEN, int N){
         }
         first = 0;
         tempFirstMovesBoard = get_only_board(game->board);//getting the FEN of the board state for every half move played
+        ereport(INFO,errmsg("%s", tempFirstMovesBoard));
         found = strcmp(tempFirstMovesBoard, FEN);
         pfree(tempFirstMovesBoard);
     }
