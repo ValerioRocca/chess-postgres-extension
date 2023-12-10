@@ -1,78 +1,91 @@
-
--- Query 1
--- Return the board at half-move 3 of the games played in Palma de Mallorca
-
-SELECT *
+SELECT getBoard(notation, 3)
 FROM games_100
-WHERE get_board(san, 3) AND game_site == 'Palma de Mallorca'
+WHERE game_site = 'Palma de Mallorca';
 
-SELECT *
+SELECT getBoard(notation, 3)
 FROM games_20
-WHERE get_board(san, 3) AND game_site == 'Palma de Mallorca'
+WHERE  game_site = 'Palma de Mallorca';
 
-SELECT *
+select getBoard(notation, 3)
 FROM games_5
-WHERE get_board(san, 3) AND game_site == 'Palma de Mallorca'
+WHERE game_site = 'Palma de Mallorca';
 
-SELECT *
+select getBoard(notation, 3)
 FROM games_1
-WHERE get_board(san, 3) AND game_site == 'Palma de Mallorca'
+WHERE  game_site = 'Palma de Mallorca';
 
--- Query 2
--- Return the games played in Leningrad and remove its opening move
+--Query 2
+--Return the games played in Leningrad and remove its opening move
 
-SELECT get_first_moves(san, 1)
+SELECT getFirstMoves(notation, 1)
 FROM games_100
-WHERE game_site == 'Leningrad';
+WHERE game_site = 'Leningrad';
 
-SELECT get_first_moves(san, 1)
+SELECT getFirstMoves(notation, 1)
 FROM games_20
-WHERE game_site == 'Leningrad';
+WHERE game_site = 'Leningrad';
 
-SELECT get_first_moves(san, 1)
+SELECT getFirstMoves(notation, 1)
 FROM games_5
-WHERE game_site == 'Leningrad';
+WHERE game_site = 'Leningrad';
 
-SELECT get_first_moves(san, 1)
+SELECT getFirstMoves(notation, 1)
 FROM games_1
-WHERE game_site == 'Leningrad';
+WHERE game_site = 'Leningrad';
 
 -- Query 3
--- Return the games which 6 first half-moves are the same of the Game of the Century
+-- Count the number of games that start with move "1.e4"
 
-SELECT *, pg_read_file('C:\Users\valer\Desktop\DBSA\project\chess-postgres-extension\test_database\game_of_the_century.txt') AS gotc;
+SELECT count(*)
 FROM games_100
-WHERE has_opening(san, gotc);
+WHERE hasOpening(notation, '1.e4 '::san);
 
-SELECT *, pg_read_file('C:\Users\valer\Desktop\DBSA\project\chess-postgres-extension\test_database\game_of_the_century.txt') AS gotc;
+SELECT count(*)
 FROM games_20
-WHERE has_opening(san, gotc);
+WHERE hasOpening(notation, '1.e4 '::san);
 
-SELECT *, pg_read_file('C:\Users\valer\Desktop\DBSA\project\chess-postgres-extension\test_database\game_of_the_century.txt') AS gotc;
+SELECT count(*)
 FROM games_5
-WHERE has_opening(san, gotc);
+WHERE hasOpening(notation, '1.e4 '::san);
 
-SELECT *, pg_read_file('C:\Users\valer\Desktop\DBSA\project\chess-postgres-extension\test_database\game_of_the_century.txt') AS gotc;
+SELECT count(*)
 FROM games_1
-WHERE has_opening(san, gotc);
+WHERE hasOpening(notation, '1.e4 '::san);
 
--- Query 4
--- Return the games which contain the in their first 10 half-moves the final board of Kasparov vs. Topalov, Wijk aan Zee 1999
+SELECT count(*)
+FROM games_1
+WHERE hasOpening(notation, '1. Nf3 Nf6 2. c4 g6 3. Nc3 Bg7'::san);
 
-SELECT *, pg_read_file('C:\Users\valer\Desktop\DBSA\project\chess-postgres-extension\test_database\game_of_the_century.txt') AS gotc;
+SELECT count(*)
+FROM games_5
+WHERE hasOpening(notation, '1. Nf3 Nf6 2. c4 g6 3. Nc3 Bg7'::san);
+
+SELECT count(*)
+FROM games_20
+WHERE hasOpening(notation, '1. Nf3 Nf6 2. c4 g6 3. Nc3 Bg7'::san);
+
+SELECT count(*)
 FROM games_100
-WHERE has_board(san, '8/P6p/6p1/5p2/5P2/2p3P1/3r3P/2K1k3');
+WHERE hasOpening(notation, '1. Nf3 Nf6 2. c4 g6 3. Nc3 Bg7'::san);
 
-SELECT *, pg_read_file('C:\Users\valer\Desktop\DBSA\project\chess-postgres-extension\test_database\game_of_the_century.txt') AS gotc;
-FROM games_20
-WHERE has_board(san, '8/P6p/6p1/5p2/5P2/2p3P1/3r3P/2K1k3');
 
-SELECT *, pg_read_file('C:\Users\valer\Desktop\DBSA\project\chess-postgres-extension\test_database\game_of_the_century.txt') AS gotc;
-FROM games_5
-WHERE has_board(san, '8/P6p/6p1/5p2/5P2/2p3P1/3r3P/2K1k3');
+--Query 4
 
-SELECT *, pg_read_file('C:\Users\valer\Desktop\DBSA\project\chess-postgres-extension\test_database\game_of_the_century.txt') AS gotc;
-FROM games_1
-WHERE has_board(san, '8/P6p/6p1/5p2/5P2/2p3P1/3r3P/2K1k3');
+SELECT count(*)
+from games_100
+where hasBoard(notation,'RNBQKBNR/PPPP1PPP/8/8/3P4/8/ppp1pppp/rnbqkbnr w KQkq - 0 1', 10);
+
+SELECT count(*)
+from games_20
+where hasBoard(notation,'RNBQKBNR/PPPP1PPP/8/8/3P4/8/ppp1pppp/rnbqkbnr w KQkq - 0 1', 10);
+
+SELECT count(*)
+from games_5
+where hasBoard(notation,'RNBQKBNR/PPPP1PPP/8/8/3P4/8/ppp1pppp/rnbqkbnr w KQkq - 0 1', 10);
+
+SELECT count(*)
+from games_1
+where hasBoard(notation,'RNBQKBNR/PPPP1PPP/8/8/3P4/8/ppp1pppp/rnbqkbnr w KQkq - 0 1', 10);
+
 
 
