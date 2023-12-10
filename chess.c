@@ -65,18 +65,31 @@ Datum san_output(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(san_eq);
 Datum san_eq(PG_FUNCTION_ARGS) {
-    PG_RETURN_BOOL(text_eq(PG_GETARG_SAN_P(0),PG_GETARG_SAN_P(1)));
+    San* san_one = PG_GETARG_SAN_P(0);
+    San* san_two = PG_GETARG_SAN_P(1);
+    bool result = text_eq(san_one,san_two);
+    PG_FREE_IF_COPY(san_one,0);
+    PG_FREE_IF_COPY(san_two,0);
+    PG_RETURN_BOOL(result);
 }
 PG_FUNCTION_INFO_V1(san_ne);
 Datum san_ne(PG_FUNCTION_ARGS) {
-    PG_RETURN_BOOL(!text_eq(PG_GETARG_SAN_P(0),PG_GETARG_SAN_P(1)));
+    San* san_one = PG_GETARG_SAN_P(0);
+    San* san_two = PG_GETARG_SAN_P(1);
+    bool result = !text_eq(san_one,san_two);
+    PG_FREE_IF_COPY(san_one,0);
+    PG_FREE_IF_COPY(san_two,0);
+    PG_RETURN_BOOL(result);
 }
 
 PG_FUNCTION_INFO_V1(san_lt_2);
 Datum san_lt_2(PG_FUNCTION_ARGS) {
     San* san_one = PG_GETARG_SAN_P(0);
     San* san_two = PG_GETARG_SAN_P(1);
-    if (strcmp(san_one->san, san_two->san) < 0) {
+    int result = strcmp(san_one->san, san_two->san);
+    PG_FREE_IF_COPY(san_one,0);
+    PG_FREE_IF_COPY(san_two,0);
+    if (result < 0) {
         PG_RETURN_BOOL(1); // true
     } else {
         PG_RETURN_BOOL(0); // false
@@ -87,7 +100,10 @@ PG_FUNCTION_INFO_V1(san_le_2);
 Datum san_le_2(PG_FUNCTION_ARGS) {
     San* san_one = PG_GETARG_SAN_P(0);
     San* san_two = PG_GETARG_SAN_P(1);
-    if (strcmp(san_one->san, san_two->san) <= 0) {
+    int result = strcmp(san_one->san, san_two->san);
+    PG_FREE_IF_COPY(san_one,0);
+    PG_FREE_IF_COPY(san_two,0);
+    if (result <= 0) {
         PG_RETURN_BOOL(1); // true
     } else {
         PG_RETURN_BOOL(0); // false
@@ -98,7 +114,10 @@ PG_FUNCTION_INFO_V1(san_gt_2); // >
 Datum san_gt_2(PG_FUNCTION_ARGS) {
     San* san_one = PG_GETARG_SAN_P(0);
     San* san_two = PG_GETARG_SAN_P(1);
-    if (strcmp(san_one->san, san_two->san) > 0) {
+    int result = strcmp(san_one->san, san_two->san);
+    PG_FREE_IF_COPY(san_one,0);
+    PG_FREE_IF_COPY(san_two,0);
+    if (result > 0) {
         PG_RETURN_BOOL(1); // true
     } else {
         PG_RETURN_BOOL(0); // false
@@ -109,7 +128,10 @@ PG_FUNCTION_INFO_V1(san_ge_2);
 Datum san_ge_2(PG_FUNCTION_ARGS) {
     San* san_one = PG_GETARG_SAN_P(0);
     San* san_two = PG_GETARG_SAN_P(1);
-    if (strcmp(san_one->san, san_two->san) >= 0) {
+    int result = strcmp(san_one->san, san_two->san);
+    PG_FREE_IF_COPY(san_one,0);
+    PG_FREE_IF_COPY(san_two,0);
+    if (result >= 0) {
         PG_RETURN_BOOL(1); // true
     } else {
         PG_RETURN_BOOL(0); // false
@@ -120,14 +142,19 @@ PG_FUNCTION_INFO_V1(san_cmp_2);
 Datum san_cmp_2(PG_FUNCTION_ARGS) {
     San* san_one = PG_GETARG_SAN_P(0);
     San* san_two = PG_GETARG_SAN_P(1);
-    PG_RETURN_INT64(strcmp(san_one->san, san_two->san));
+    int result = strcmp(san_one->san, san_two->san);
+    PG_FREE_IF_COPY(san_one,0);
+    PG_FREE_IF_COPY(san_two,0);
+    PG_RETURN_INT64(result);
 }
 
 PG_FUNCTION_INFO_V1(san_eq_num);
 Datum san_eq_num(PG_FUNCTION_ARGS) {
     San* my_san = PG_GETARG_SAN_P(0);
     int input_int = PG_GETARG_INT32(1);
-    if (my_san->size_of_san == input_int) {
+    int san_size = my_san->size_of_san;
+    PG_FREE_IF_COPY(my_san, 0);
+    if (san_size == input_int) {
         PG_RETURN_BOOL(1); // true
     } else {
         PG_RETURN_BOOL(0); // false
@@ -137,7 +164,9 @@ PG_FUNCTION_INFO_V1(san_ne_num);
 Datum san_ne_num(PG_FUNCTION_ARGS) {
     San* my_san = PG_GETARG_SAN_P(0);
     int input_int = PG_GETARG_INT32(1);
-    if (my_san->size_of_san != input_int) {
+    int san_size = my_san->size_of_san;
+    PG_FREE_IF_COPY(my_san, 0);
+    if (san_size != input_int) {
         PG_RETURN_BOOL(1); // true
     } else {
         PG_RETURN_BOOL(0); // false
@@ -148,7 +177,9 @@ PG_FUNCTION_INFO_V1(san_lt_num);
 Datum san_lt_num(PG_FUNCTION_ARGS) {
     San* my_san = PG_GETARG_SAN_P(0);
     int input_int = PG_GETARG_INT32(1);
-    if (my_san->size_of_san < input_int) {
+    int san_size = my_san->size_of_san;
+    PG_FREE_IF_COPY(my_san, 0);
+    if (san_size < input_int) {
         PG_RETURN_BOOL(1); // true
     } else {
         PG_RETURN_BOOL(0); // false
@@ -159,7 +190,9 @@ PG_FUNCTION_INFO_V1(san_le_num);
 Datum san_le_num(PG_FUNCTION_ARGS) {
     San* my_san = PG_GETARG_SAN_P(0);
     int input_int = PG_GETARG_INT32(1);
-    if (my_san->size_of_san <= input_int) {
+    int san_size = my_san->size_of_san;
+    PG_FREE_IF_COPY(my_san, 0);
+    if (san_size <= input_int) {
         PG_RETURN_BOOL(1); // true
     } else {
         PG_RETURN_BOOL(0); // false
@@ -170,7 +203,9 @@ PG_FUNCTION_INFO_V1(san_gt_num); // >
 Datum san_gt_num(PG_FUNCTION_ARGS) {
     San* my_san = PG_GETARG_SAN_P(0);
     int input_int = PG_GETARG_INT32(1);
-    if (my_san->size_of_san > input_int) {
+    int san_size = my_san->size_of_san;
+    PG_FREE_IF_COPY(my_san, 0);
+    if (san_size > input_int) {
         PG_RETURN_BOOL(1); // true
     } else {
         PG_RETURN_BOOL(0); // false
@@ -181,7 +216,9 @@ PG_FUNCTION_INFO_V1(san_ge_num);
 Datum san_ge_num(PG_FUNCTION_ARGS) {
     San* my_san = PG_GETARG_SAN_P(0);
     int input_int = PG_GETARG_INT32(1);
-    if (my_san->size_of_san >= input_int) {
+    int san_size = my_san->size_of_san;
+    PG_FREE_IF_COPY(my_san, 0);
+    if (san_size >= input_int) {
         PG_RETURN_BOOL(1); // true
     } else {
         PG_RETURN_BOOL(0); // false
@@ -220,6 +257,7 @@ Datum getBoard(PG_FUNCTION_ARGS) {
     San *my_san = PG_GETARG_SAN_P(0); // Get input san pointer
     int input_int = PG_GETARG_INT32(1);
     char *result = internal_get_board(my_san->san,input_int, my_san->size_of_san);
+    free(my_san->san);
     PG_FREE_IF_COPY(my_san, 0);
     PG_RETURN_CSTRING(result);
 }
@@ -250,6 +288,8 @@ Datum hasBoard(PG_FUNCTION_ARGS) {
     int input_int = PG_GETARG_INT32(2);
     bool result = internal_has_board(my_san,input_fen,input_int);
     PG_FREE_IF_COPY(input_fen, 0);
+    PG_FREE_IF_COPY(my_san, 0);
+    PG_FREE_IF_COPY(fen, 0);
     PG_RETURN_BOOL(result);
 }
 
@@ -260,8 +300,10 @@ Datum extract_value(PG_FUNCTION_ARGS){
     //extract custom data types
     San* my_san = PG_GETARG_SAN_P(0);
     int32 *nkeys = (int32 *)PG_GETARG_POINTER(1);
-    nkeys = &my_san->size_of_san;
-    Datum* result = (Datum *)palloc0(sizeof(Datum)*my_san->size_of_san);
+    int new_nkeys = ((my_san->size_of_san)+1);
+    nkeys = &new_nkeys;
+    ereport(INFO,errmsg("size of san : %d",my_san->size_of_san+1));
+    Datum* result = (Datum *)palloc(sizeof(Datum)*((my_san->size_of_san)+1));
 
     SCL_Record record;//Hold record of the game
 
@@ -275,23 +317,25 @@ Datum extract_value(PG_FUNCTION_ARGS){
     SCL_recordFromPGN(record, my_san->san);
     SCL_Game *game = (SCL_Game *)palloc0(sizeof(SCL_Game));
     SCL_gameInit(game, 0);
-    int first = 1;
-    while((countHalfMoves<my_san->size_of_san+1)){//stop when we have verified all the half moves or if we find the board state
-        if (first == 0) {
+    int first = 0;
+    while((countHalfMoves<my_san->size_of_san)){//stop when we have verified all the half moves or if we find the board state
+        if (first == 1) {
             getMove = SCL_recordGetMove(record, countHalfMoves, &squareFrom, &squareTo, &promotedPiece);
             SCL_gameMakeMove(game, squareFrom, squareTo, promotedPiece);
         }
-        if(first == 0){
+        tempFirstMovesBoard = get_only_board(game->board);//getting the FEN of the board state for every half move played
+        ereport(INFO,errmsg("%s",tempFirstMovesBoard));
+        result[countHalfMoves+first] = CStringGetDatum(tempFirstMovesBoard);
+        ereport(INFO,errmsg("%d : %s",countHalfMoves+first,result[countHalfMoves+first]));
+        pfree(tempFirstMovesBoard);
+        if(first == 1){
             countHalfMoves += 1;
         }
-        first = 0;
-        tempFirstMovesBoard = get_only_board(game->board);//getting the FEN of the board state for every half move played
-        result[countHalfMoves] = CStringGetDatum(tempFirstMovesBoard);
-        pfree(tempFirstMovesBoard);
+        first = 1;
     }
+    ereport(INFO,errmsg("%d",sizeof(result)));
     ereport(INFO,errmsg("end value"));
     PG_RETURN_POINTER(result);
-
 }
 
 PG_FUNCTION_INFO_V1(extract_query);
@@ -324,18 +368,27 @@ Datum compare(PG_FUNCTION_ARGS){
 
     int size_board_one = 0;
     int size_board_two = 0;
-    for(int i=0; board_one[i] != '\0'; i++){
-        if (isalnum(board_one[i])){
-            size_board_one += (int)(board_one[i]);
+    if(board_one != NULL && board_two != NULL) {
+        for (int i = 0; board_one[i] != '\0'; i++) {
+            if (isalnum(board_one[i])) {
+                size_board_one += (int) (board_one[i]);
+            }
         }
-    }
-    for(int i=0; board_two[i] != '\0'; i++){
-        if (isalnum(board_two[i])){
-            size_board_two += (int)(board_two[i]);
+        for (int i = 0; board_two[i] != '\0'; i++) {
+            if (isalnum(board_two[i])) {
+                size_board_two += (int) (board_two[i]);
+            }
         }
+        size_board_one = 64 - size_board_one;
+        size_board_two = 64 - size_board_two;
     }
-    size_board_one=64-size_board_one;
-    size_board_two=64-size_board_two;
+    if(board_one == NULL) {
+        size_board_one = -1;
+    }
+    if(board_two == NULL) {
+        size_board_two = -1;
+    }
+
 
     //compare the values
     if (size_board_one<size_board_two) result = -1;
@@ -668,14 +721,13 @@ bool internal_has_board(San *my_san, const char* FEN, int N){
             getMove = SCL_recordGetMove(record, countHalfMoves, &squareFrom, &squareTo, &promotedPiece);
             SCL_gameMakeMove(game, squareFrom, squareTo, promotedPiece);
         }
+        tempFirstMovesBoard = get_only_board(game->board);//getting the FEN of the board state for every half move played
+        found = strcmp(tempFirstMovesBoard, FEN);
+        pfree(tempFirstMovesBoard);
         if(first == 0){
             countHalfMoves += 1;
         }
         first = 0;
-        tempFirstMovesBoard = get_only_board(game->board);//getting the FEN of the board state for every half move played
-        ereport(INFO,errmsg("%s", tempFirstMovesBoard));
-        found = strcmp(tempFirstMovesBoard, FEN);
-        pfree(tempFirstMovesBoard);
     }
     if(((countHalfMoves == N+1 || countHalfMoves == my_san->size_of_san+1) && found != 0) || N<0){//verify if we have found the board state or if we have finished iterating without finding anything
         solution = false;
