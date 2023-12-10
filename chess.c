@@ -319,11 +319,12 @@ Datum compare(PG_FUNCTION_ARGS){
     //extract custom data type
     char* board_one = PG_GETARG_CSTRING(0);
     char* board_two = PG_GETARG_CSTRING(1);
+    ereport(INFO,errmsg("%s\n%s", board_one, board_two));
     int32 result;
 
     int size_board_one = 0;
     int size_board_two = 0;
-    for(int i=0; board_one != '\0'; i++){
+    for(int i=0; board_one[i] != '\0'; i++){
         if (isalnum(board_one[i])){
             size_board_one += (int)(board_one[i]);
         }
