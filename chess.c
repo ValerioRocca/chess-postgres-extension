@@ -22,6 +22,7 @@ PG_MODULE_MAGIC;
 #define PG_GETARG_SAN_P(n) DatumGetSanP(PG_GETARG_DATUM(n))
 #define PG_RETURN_SAN_P(x) return SanPGetDatum(x)
 
+
 typedef struct {
     char* board[8];//max size<90
     char turn[2];
@@ -36,6 +37,10 @@ typedef struct {
     int size_of_san;
 } San;
 
+typedef struct {
+    text* board;
+} myGinKey;
+
 bool text_eq(San *san_one, San *san_two);
 void is_fen(char *fen);
 Fen *fen_constructor(char *fen_char);
@@ -47,6 +52,7 @@ bool internal_has_board(San *my_san, const char* FEN, int N);
 char ** str_matrix_allocation(int rows, int columns);
 void free_str_matrix(char **matrix, int rows);
 char* get_only_board(SCL_Board board);
+myGinKey *charToGinKey(text *board);
 
 PG_FUNCTION_INFO_V1(san_input);
 Datum san_input(PG_FUNCTION_ARGS) {
@@ -283,14 +289,12 @@ Datum hasBoard(PG_FUNCTION_ARGS) {
 
 PG_FUNCTION_INFO_V1(extract_value);
 Datum extract_value(PG_FUNCTION_ARGS){
-    ereport(INFO,errmsg("inside value"));
 
     //extract custom data types
     San* my_san = PG_GETARG_SAN_P(0);
     int32 *nkeys = (int32 *)PG_GETARG_POINTER(1);
     int new_nkeys = ((my_san->size_of_san)+1);
     nkeys = &new_nkeys;
-    ereport(INFO,errmsg("size of san : %d",my_san->size_of_san+1));
     Datum* result = (Datum *)palloc(sizeof(Datum)*((my_san->size_of_san)+1));
 
     SCL_Record record;//Hold record of the game
@@ -312,23 +316,20 @@ Datum extract_value(PG_FUNCTION_ARGS){
             SCL_gameMakeMove(game, squareFrom, squareTo, promotedPiece);
         }
         tempFirstMovesBoard = get_only_board(game->board);//getting the FEN of the board state for every half move played
-        ereport(INFO,errmsg("%s",tempFirstMovesBoard));
-        result[countHalfMoves+first] = CStringGetDatum(tempFirstMovesBoard);
-        ereport(INFO,errmsg("%d : %s",countHalfMoves+first,result[countHalfMoves+first]));
+
+
+        result[countHalfMoves+first] = PointerGetDatum(charToGinKey(cstring_to_text(tempFirstMovesBoard)));
         pfree(tempFirstMovesBoard);
         if(first == 1){
             countHalfMoves += 1;
         }
         first = 1;
     }
-    ereport(INFO,errmsg("%d",sizeof(result)));
-    ereport(INFO,errmsg("end value"));
     PG_RETURN_POINTER(result);
 }
 
 PG_FUNCTION_INFO_V1(extract_query);
 Datum extract_query(PG_FUNCTION_ARGS){
-    ereport(INFO,errmsg("inside query"));
     Datum query = PG_GETARG_DATUM(0);
     int32 *nkeys = (int32 *) PG_GETARG_POINTER(1);
     Datum *board_datum;
@@ -341,48 +342,39 @@ Datum extract_query(PG_FUNCTION_ARGS){
     snprintf(board,len,"%s/%s/%s/%s/%s/%s/%s/%s", fen->board[0],fen->board[1],fen->board[2],fen->board[3],fen->board[4],fen->board[5],fen->board[6],fen->board[7]);
     board_datum=(Datum *)CStringGetDatum(board);
     *nkeys=1;
-    ereport(INFO,errmsg("end query"));
     PG_RETURN_POINTER(board);
 }
 
 PG_FUNCTION_INFO_V1(compare);
 Datum compare(PG_FUNCTION_ARGS){
-    ereport(INFO,errmsg("inside compare"));
     //extract custom data type
-    char* board_one = PG_GETARG_CSTRING(0);
-    char* board_two = PG_GETARG_CSTRING(1);
-    ereport(INFO,errmsg("%s\n%s", board_one, board_two));
+    myGinKey *key_one = (myGinKey *)PG_GETARG_VARLENA_P(0);
+    myGinKey *key_two = (myGinKey *)PG_GETARG_VARLENA_P(1);
+    char* board_one = text_to_cstring(key_one->board);
+    char* board_two = text_to_cstring(key_two->board);
     int32 result;
 
     int size_board_one = 0;
     int size_board_two = 0;
-    if(board_one != NULL && board_two != NULL) {
-        for (int i = 0; board_one[i] != '\0'; i++) {
-            if (isalnum(board_one[i])) {
-                size_board_one += (int) (board_one[i]);
-            }
+    for (int i = 0; i<strlen(board_one); i++) {
+        if (isalnum(board_one[i])) {
+            size_board_one += (int) (board_one[i]);
         }
-        for (int i = 0; board_two[i] != '\0'; i++) {
-            if (isalnum(board_two[i])) {
-                size_board_two += (int) (board_two[i]);
-            }
+    }
+    for (int i = 0; i<strlen(board_one) != '\0'; i++) {
+        if (isalnum(board_two[i])) {
+            size_board_two += (int) (board_two[i]);
         }
-        size_board_one = 64 - size_board_one;
-        size_board_two = 64 - size_board_two;
     }
-    if(board_one == NULL) {
-        size_board_one = -1;
-    }
-    if(board_two == NULL) {
-        size_board_two = -1;
-    }
-
+    size_board_one = 64 - size_board_one;
+    size_board_two = 64 - size_board_two;
 
     //compare the values
     if (size_board_one<size_board_two) result = -1;
     else if (size_board_one>size_board_two) result = 1;
     else result = 0;
-    ereport(INFO,errmsg("end compare"));
+    PG_FREE_IF_COPY(key_one,0);
+    PG_FREE_IF_COPY(key_two,1);
     PG_RETURN_INT32(result);
 }
 
@@ -402,6 +394,12 @@ bool text_eq(San *san_one, San *san_two) {
     int result = strcmp(san_one->san, san_two->san);
     bool areEqual = (result == 0);
     return areEqual;
+}
+
+myGinKey *charToGinKey(text *board){
+    myGinKey *myKey = (myGinKey *)palloc0(sizeof(myGinKey));
+    myKey->board = board;
+    return myKey;
 }
 
 San *san_constructor(char *san_char){

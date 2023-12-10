@@ -124,37 +124,37 @@ CREATE OR REPLACE FUNCTION getBoard(san,int)
 CREATE OR REPLACE FUNCTION hasOpening(san,san)
     RETURNS boolean
     AS 'MODULE_PATHNAME','hasOpening'
-    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+    LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION hasBoard(san,fen,int)
     RETURNS boolean
     AS 'MODULE_PATHNAME','hasBoard'
-    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+    LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION compare(internal, internal)
-    RETURNS internal
+    RETURNS integer
 AS 'MODULE_PATHNAME'
-    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+    LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION extract_value(internal, internal, internal)
     RETURNS internal
 AS 'MODULE_PATHNAME'
-    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+    LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION extract_query(internal, internal, internal, internal, internal, internal, internal)
     RETURNS internal
 AS 'MODULE_PATHNAME'
-    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+    LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION consistent(internal, internal, internal, internal, internal, internal, internal, internal)
     RETURNS internal
 AS 'MODULE_PATHNAME'
-    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+    LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION tri_consistent(internal, internal, internal, internal, internal, internal, internal)
     RETURNS internal
 AS 'MODULE_PATHNAME'
-    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+    LANGUAGE C IMMUTABLE STRICT;
 
 
 CREATE OPERATOR = (
