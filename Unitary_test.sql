@@ -15,17 +15,18 @@ CREATE TABLE games_100 (
 );
 
 COPY games_100(notation, player, game_site)
-FROM '/home/mcsalazart/Downloads/BDMA/Systems architecture/project/test_database/csv_games_10.csv' 
+FROM '/home/nb/Desktop/DBSA/chess-postgres-extension/csv_games_10.csv'
 DELIMITER ',' CSV HEADER;
 
 --Basics
 
 select *
-from games_100 g ;
+from games_100;
 
 select count(*)
-from games_100 g;
+from games_100;
 
+/*
 
 SELECT getBoard(notation, 3)
 FROM games_100
@@ -35,16 +36,16 @@ SELECT getFirstMoves(notation, 1)
 FROM games_100
 WHERE game_site = 'Leningrad';
 
-SELECT *
+SELECT count(*)
 FROM games_100
 WHERE hasOpening(notation, '1.e4 '::san);
 
-select hasBoard(notation,'RNBQKBNR/PPPP1PPP/8/8/3P4/8/ppp1pppp/rnbqkbnr w KQkq - 0 1', 200)
+select hasBoard(notation,'RNBQKBNR/PPPP1PPP/8/8/3P4/8/ppp1pppp/rnbqkbnr w KQkq - 0 1'::fen, 200)
 from games_100;
 
 select *
 from games_100
-where hasBoard(notation,'RNBQKBNR/PPPP1PPP/8/8/3P4/8/ppp1pppp/rnbqkbnr w KQkq - 0 1', 200);
+where hasBoard(notation,'RNBQKBNR/PPPP1PPP/8/8/3P4/8/ppp1pppp/rnbqkbnr w KQkq - 0 1'::fen, 200);
 
 
 DROP INDEX IF EXISTS san_index;
@@ -55,3 +56,4 @@ explain
 SELECT count(*)
 FROM games_1
 WHERE hasOpening(notation, '1.e4 '::san);
+*/
