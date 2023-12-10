@@ -124,37 +124,13 @@ CREATE OR REPLACE FUNCTION getBoard(san,int)
 CREATE OR REPLACE FUNCTION hasOpening(san,san)
     RETURNS boolean
     AS 'MODULE_PATHNAME','hasOpening'
-    LANGUAGE C IMMUTABLE STRICT;
+    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE OR REPLACE FUNCTION hasBoard(san,fen,int)
     RETURNS boolean
     AS 'MODULE_PATHNAME','hasBoard'
-    LANGUAGE C IMMUTABLE STRICT;
+    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE OR REPLACE FUNCTION compare(internal, internal)
-    RETURNS integer
-AS 'MODULE_PATHNAME'
-    LANGUAGE C IMMUTABLE STRICT;
-
-CREATE OR REPLACE FUNCTION extract_value(internal, internal, internal)
-    RETURNS internal
-AS 'MODULE_PATHNAME'
-    LANGUAGE C IMMUTABLE STRICT;
-
-CREATE OR REPLACE FUNCTION extract_query(internal, internal, internal, internal, internal, internal, internal)
-    RETURNS internal
-AS 'MODULE_PATHNAME'
-    LANGUAGE C IMMUTABLE STRICT;
-
-CREATE OR REPLACE FUNCTION consistent(internal, internal, internal, internal, internal, internal, internal, internal)
-    RETURNS internal
-AS 'MODULE_PATHNAME'
-    LANGUAGE C IMMUTABLE STRICT;
-
-CREATE OR REPLACE FUNCTION tri_consistent(internal, internal, internal, internal, internal, internal, internal)
-    RETURNS internal
-AS 'MODULE_PATHNAME'
-    LANGUAGE C IMMUTABLE STRICT;
 
 
 CREATE OPERATOR = (
@@ -268,16 +244,6 @@ CREATE OPERATOR >= (
     NEGATOR = <
     );
 COMMENT ON OPERATOR >=(san, int) IS 'greater-than-or-equal';
-
-CREATE OPERATOR CLASS gin_san
-    DEFAULT FOR TYPE san USING gin
-    AS
-    FUNCTION 1 compare(internal, internal),
-    FUNCTION 2 extract_value(internal, internal, internal),
-    FUNCTION 3 extract_query(internal, internal, internal, internal, internal, internal, internal),
-    FUNCTION 4 consistent(internal, internal, internal, internal, internal, internal, internal, internal),
-    FUNCTION 6 tri_consistent(internal, internal, internal, internal, internal, internal, internal),
-    STORAGE internal;
 
 CREATE OPERATOR CLASS btree_san
 DEFAULT FOR TYPE san USING btree
