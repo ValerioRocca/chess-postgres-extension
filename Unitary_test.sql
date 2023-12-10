@@ -31,6 +31,15 @@ FROM games_1
 WHERE game_site = 'Leningrad';
 
 
+SELECT count(*)
+FROM games_1
+WHERE hasOpening(notation, '1.e4 '::san);
+
+SELECT count(*)
+FROM games_1
+WHERE hasOpening(notation, '1. Nf3 Nf6 2. c4 g6 3. Nc3 Bg7'::san);
+
+
 
 
 SELECT count(*)
